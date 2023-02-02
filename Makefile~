@@ -1,0 +1,16 @@
+CFLAGS=-Wall -pedantic -std=c11 -I. -g
+VALGRIND=valgrind --leak-check=full
+OFILES=utils/queue.o utils/hash.o utils/webpage.o
+
+all: $(OFILES)
+			ar cr lib/libutils.a $(OFILES)
+
+%.o:	%.c
+			gcc $(CFLAGS) -c $<
+
+%.v: %
+				$(VALGRIND) $<
+
+
+clean:
+	rm -f
