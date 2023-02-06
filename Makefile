@@ -1,4 +1,3 @@
-CFLAGS=-Wall -pedantic -std=c11 -I. -g
 VALGRIND=valgrind --leak-check=full
 OFILES=utils/queue.o utils/hash.o utils/webpage.o
 
@@ -14,6 +13,7 @@ utils/webpage.o: utils/webpage.c
 %.v: %
 				$(VALGRIND) $<
 
-
+crawler/crawler: crawler/crawler.c 
+		gcc $(CFLAGS) crawler/crawler.c $(LIBS) –o $@
 clean:
-	rm -f
+	rm -f crawler/crawler
