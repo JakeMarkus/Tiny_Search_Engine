@@ -35,6 +35,33 @@ bool url_matcher(void* url1, const void* url2) {
 	}
 }
 
+
+int32_t pagesave(webpage_t *pagep, int id, char *dirname)
+{
+	FILE * fp;
+	
+	char id_str [250]; //id/10 + 1
+
+	char path[250] = "";
+	
+	sprintf(id_str, "%d", id);
+
+	strcat(path, dirname);
+	strcat(path, id_str);
+
+	fp = fopen(path, "w+");
+
+	char* html = webpage_getHTML(pagep);
+
+	char html_len[250];
+	sprintf(html_len, "%d", (int)strlen(html));
+	
+	fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), id_str,html_len, html );
+
+	fclose(fp);
+	
+	return 0;
+}
 queue_t* url_scanner(webpage_t* my_page) {
 
 	int pos = 0;
@@ -58,16 +85,12 @@ queue_t* url_scanner(webpage_t* my_page) {
 			if (IsInternalURL(next_url)) {
 			
 				qput(internalLinks, copy);
-			//			printf("%s, internal\n", next_url);
+			
 			}
 			else
 				{
 					free(copy);
 				}
-
-		//		else {
-			//			printf("%s, external\n", next_url);
-		//		}
 			
 		}
 		else
@@ -101,6 +124,12 @@ int main(void) {
 
 	queue_t* links = url_scanner(my_page);
 	qapply(links, printUrl);
+
+
+	char* dir = "../pages/";
+	
+	pagesave(my_page, 0, dir);
+	
 	webpage_delete(my_page);
 
 	qclose(links);
