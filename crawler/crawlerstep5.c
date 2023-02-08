@@ -119,19 +119,9 @@ queue_t* url_scanner(webpage_t* my_page) {
 }
 
 
-int main(int argc, char *argv[]) {
+int main(void) {
 
-	const char* USAGE = "usage: crawler <seedurl> <pagedir> <maxdeph>\n"
-
-		if(argc != 4)
-			{
-				printf(USAGE);
-				exit(EXIT_FAILURE);
-			}
-
-	char* my_url = argv[1];
-	char* pagedir = argv[2];
-	
+	char* my_url = "https://thayer.github.io/engs50/";
 
 	webpage_t* my_page = webpage_new(my_url, 0, NULL);
 
