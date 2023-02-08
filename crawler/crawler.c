@@ -111,7 +111,7 @@ queue_t* url_scanner(webpage_t* my_page, hashtable_t* url_table) {
 				free(next_url);
 			}
 	}
-		
+	
 	return internalLinks;
 }
 
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 	
 	qput(mainqueue, my_page);
 
-	//pagesave(my_page, 0, pagedir);
+	pagesave(my_page, 1, pagedir);
 	
 
 	int id = 1;
@@ -182,12 +182,17 @@ int main(int argc, char *argv[]) {
 					id++;
 					
 					next =  webpage_new((char*)qget(nextLayer), webpage_getDepth(x)+1, NULL);
-
 				}
+
+			qclose(nextLayer);
+			webpage_delete(x);
 		}
 	
-	webpage_delete(my_page);
+	//webpage_delete(my_page);
 
+	//free(my_url);
+	//free(pagedir);
+	qclose(mainqueue);
 	hclose(url_table);
 	exit(EXIT_SUCCESS);
 
