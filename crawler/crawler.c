@@ -60,12 +60,20 @@ queue_t* url_scanner(webpage_t* my_page) {
 				qput(internalLinks, copy);
 			//			printf("%s, internal\n", next_url);
 			}
+			else
+				{
+					free(copy);
+				}
 
 		//		else {
 			//			printf("%s, external\n", next_url);
 		//		}
 			
 		}
+		else
+			{
+				free(next_url);
+			}
 	}
 
 	hclose(url_table);
