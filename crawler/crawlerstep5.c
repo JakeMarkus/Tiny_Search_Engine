@@ -63,7 +63,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 	char* html = webpage_getHTML(pagep);
 
 	char html_len[250];
-	sprintf(html_len, "%d", (int)strlen(html));
+	sprintf(html_len, "%d", (int)webpage_getHTMLlen(pagep));
 	
 	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), id_str,html_len, html );
 
