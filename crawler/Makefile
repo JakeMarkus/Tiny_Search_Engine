@@ -7,5 +7,7 @@ crawler:
 crawlerstep2:  
 			gcc $(CFLAGS) crawlerstep2.c $(LIBS) -o $@
 
+crawlerstep5: crawlerstep5.c
+			gcc $(CFLAGS) crawlerstep5.c $(LIBS) -o $@
 clean:
 			rm -f crawler
