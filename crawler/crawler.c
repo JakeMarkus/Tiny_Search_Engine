@@ -16,6 +16,7 @@
 #include "hash.h"
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 
 void printUrl(void* Url){
 	char* UrlC= (char*) Url;
@@ -49,15 +50,28 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 	strcat(path, dirname);
 	strcat(path, id_str);
 
+	if(access(dirname, W_OK)== -1){
+		printf("Cannot access %s to save pages!\n", dirname);
+		return 1;
+		}
 	fp = fopen(path, "w+");
 
+	if (fp == NULL){
+			return 2;
+		}
+	
 	char* html = webpage_getHTML(pagep);
 
 	char html_len[250];
 	sprintf(html_len, "%d", (int)strlen(html));
 	
-	fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), id_str,html_len, html );
+	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), id_str,html_len, html );
 
+	if (err < 0){
+		printf("Failed to write to file!\n");
+		return 3;
+	}
+	
 	fclose(fp);
 	
 	return 0;
