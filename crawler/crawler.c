@@ -227,6 +227,10 @@ int main(int argc, char *argv[]) {
 			webpage_delete(leftover);
 			}
 
+	if(x != NULL && !(webpage_getDepth(x) < deph))
+		{
+			webpage_delete(x);
+		}
 	printf("yee\n");
 	qclose(mainqueue);
 	hclose(url_table);
