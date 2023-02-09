@@ -73,7 +73,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 	}
 	
 	fclose(fp);
-	
+
 	return 0;
 }
 
@@ -179,8 +179,6 @@ int main(int argc, char *argv[]) {
 					//webpage_fetch(next);
 
 					
-					printf("Saving  page: %s || ID: %i\n", (char*)webpage_getURL(next), id);
-				 
 					qput(mainqueue, next);
 
 					url_copy =  malloc(strlen(webpage_getURL(next)) + 1);
@@ -189,11 +187,16 @@ int main(int argc, char *argv[]) {
 					
 					hput(url_table, url_copy, url_copy, strlen(url_copy));
 			
-					pagesave(next, id, pagedir);
-					
-					id++;
+					if(webpage_fetch(next))
+						{
+							pagesave(next, id, pagedir);
 
-					//free(webpage_getHTML(next);
+							printf("Saving  page: %s || ID: %i\n", (char*)webpage_getURL(next), id);
+				 
+							id++;
+							
+							//							free(webpage_getHTML(next));
+						}
 
 
 					next_url = (char*)qget(nextLayer);
