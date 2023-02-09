@@ -1,5 +1,5 @@
 /* crawler.c --- 
- * 
+0;136;0c0;136;0c * 
  * 
  * Author: Jacob R. Markus
  * Created: Thu Feb  2 12:01:02 2023 (-0500)
@@ -89,7 +89,7 @@ queue_t* url_scanner(webpage_t* my_page, hashtable_t* url_table) {
 
 		if (hsearch(url_table, url_matcher, next_url, sizeof(next_url)) == NULL) {
 
-			char* copy = malloc(strlen(next_url) +1);
+			char* copy = malloc(strlen(next_url) + 1);
 
 			strcpy(copy, next_url);
 
@@ -111,6 +111,8 @@ queue_t* url_scanner(webpage_t* my_page, hashtable_t* url_table) {
 				free(next_url);
 			}
 	}
+
+	//free(webpage_getHTML(my_page));
 	
 	return internalLinks;
 }
@@ -119,7 +121,7 @@ queue_t* url_scanner(webpage_t* my_page, hashtable_t* url_table) {
 
 int main(int argc, char *argv[]) {
 
-	const char* USAGE = "usage: crawler <seedurl> <pagedir> <maxdeph>\n";
+	char* USAGE = "usage: crawler <seedurl> <pagedir> <maxdeph>\n";
 
 		if(argc != 4)
 			{
@@ -135,63 +137,94 @@ int main(int argc, char *argv[]) {
 
 	webpage_t* my_page = webpage_new(my_url, 0, NULL);
 
+	if(deph == 0)
+		{
 	if(webpage_fetch(my_page)) {
 
-		webpage_getHTML(my_page);
-
-	}
-
+		pagesave(my_page, 1, pagedir);
+		free(webpage_getHTML(my_page));
+		}
 	else {
-		printf("error in fetching html\n");
-		exit(EXIT_FAILURE);
-	}
-
+			printf("error in fetching html\n");
+			exit(EXIT_FAILURE);
+		}
+		}
+	
 	queue_t* mainqueue = qopen();
 	hashtable_t* url_table = hopen(1000);
 	
 	qput(mainqueue, my_page);
-
-	pagesave(my_page, 1, pagedir);
 	
 
 	int id = 1;
 
+	char* url_copy;
 	webpage_t* x;
 	
 	while( (x = (webpage_t*)qget(mainqueue) ) != NULL && webpage_getDepth(x) < deph)
 		{
 
 			webpage_fetch(x);
-			
 			queue_t* nextLayer = url_scanner(x, url_table);
+				
+			char* next_url = (char*)qget(nextLayer);
 			
-			webpage_t* next =  webpage_new((char*)qget(nextLayer), webpage_getDepth(x)+1, NULL);
+			webpage_t* next = webpage_new(next_url, webpage_getDepth(x)+1, NULL);
+			free(next_url);
+			
 			
 			while ( next != NULL)
 				{
 
-					webpage_fetch(next);
+					//webpage_fetch(next);
 
 					
 					printf("Saving  page: %s || ID: %i\n", (char*)webpage_getURL(next), id);
 				 
 					qput(mainqueue, next);
-					hput(url_table, webpage_getURL(next), webpage_getURL(next), strlen(webpage_getURL(next)));
+
+					url_copy =  malloc(strlen(webpage_getURL(next)) + 1);
+
+					strcpy(url_copy, webpage_getURL(next));
+					
+					hput(url_table, url_copy, url_copy, strlen(url_copy));
+			
 					pagesave(next, id, pagedir);
 					
 					id++;
+
+					//free(webpage_getHTML(next);
+
+
+					next_url = (char*)qget(nextLayer);
+					next =  webpage_new(next_url, webpage_getDepth(x)+1, NULL);
+					free(next_url);
 					
-					next =  webpage_new((char*)qget(nextLayer), webpage_getDepth(x)+1, NULL);
 				}
 
 			qclose(nextLayer);
+			printf("CLOSING\n");
+
+
+			
+
+			//free(webpage_getHTML(x));
+			printf("yee\n");
 			webpage_delete(x);
 		}
-	
+
 	//webpage_delete(my_page);
 
 	//free(my_url);
-	//free(pagedir);
+	//free(pagedir)
+	
+	for(webpage_t* leftover = (webpage_t*)qget(mainqueue); leftover != NULL; leftover = (webpage_t*)qget(mainqueue))
+		{
+			printf("CLOSING LEFTOVER\n");
+			webpage_delete(leftover);
+			}
+
+	printf("yee\n");
 	qclose(mainqueue);
 	hclose(url_table);
 	exit(EXIT_SUCCESS);
