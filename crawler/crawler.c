@@ -50,6 +50,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 	strcat(path, dirname);
 	strcat(path, id_str);
 
+	
 	if(access(dirname, W_OK)== -1){
 		printf("Cannot access %s to save pages!\n", dirname);
 		return 1;
@@ -64,8 +65,11 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 
 	char html_len[250];
 	sprintf(html_len, "%d", (int)webpage_getHTMLlen(pagep));
+
+	char dephstr[250];
+	sprintf(dephstr, "%d", (int)webpage_getDepth(pagep));
 	
-	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), id_str,html_len, html );
+	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), dephstr,html_len, html );
 
 	if (err < 0){
 		printf("Failed to write to file!\n");
@@ -158,6 +162,8 @@ int main(int argc, char *argv[]) {
 
 	int id = 1;
 
+	int closenum = 1;
+	
 	char* url_copy;
 	webpage_t* x;
 	
@@ -206,8 +212,8 @@ int main(int argc, char *argv[]) {
 				}
 
 			qclose(nextLayer);
-			printf("CLOSING\n");
-
+			printf("CLOSING num %i\n", closenum);
+			closenum++;
 
 			
 
@@ -223,14 +229,18 @@ int main(int argc, char *argv[]) {
 	
 	for(webpage_t* leftover = (webpage_t*)qget(mainqueue); leftover != NULL; leftover = (webpage_t*)qget(mainqueue))
 		{
-			printf("CLOSING LEFTOVER\n");
+			printf("CLOSING LEFTOVER num %i\n", closenum);
 			webpage_delete(leftover);
+			closenum++;
 			}
 
 	if(x != NULL && !(webpage_getDepth(x) < deph))
 		{
+			printf("Closing num %i\n", closenum);
 			webpage_delete(x);
+			closenum++;
 		}
+	
 	printf("yee\n");
 	qclose(mainqueue);
 	hclose(url_table);
