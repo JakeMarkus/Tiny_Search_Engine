@@ -104,14 +104,14 @@ webpage_t* pageload(int id, char* dirnm) {
 	int num_line = 0;
 
 	//printf("yee");
-	fflush(stdout);
 
 	while(fgets(curr_line, 1000, curr_file)){
 
 		//	printf("hello\n");
-		fflush(stdout);
 		if(num_line == 0){
+			strtok(curr_line, "\n");
 			strcat(url, curr_line);
+			//printf("%s", url);
 		}
 		
 		else if(num_line == 1){
