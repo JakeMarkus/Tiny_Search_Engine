@@ -86,12 +86,9 @@ int main(void)
 					
 				}
 
-
-	printf("%p\n", (void*)first);
-
 	//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
 	
-	//webpage_delete(first);
+	webpage_delete(first);
 	//printf("After\n");
 	
 	exit(EXIT_SUCCESS);
