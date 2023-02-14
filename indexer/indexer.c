@@ -11,7 +11,7 @@
 
 
 
-
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -19,7 +19,6 @@
 #include <ctype.h>
 #include "pageio.h"
 #include "webpage.h"
-
 
 static bool containsNonChars(char * word)
 {
@@ -31,50 +30,71 @@ static bool containsNonChars(char * word)
 			
 			if ( n < 65  || n  > 122)
 				{
-					return false;
+					return true;
 				}
 			else if (n > 90 && n < 97 )
 				{
-					return false;
+					return true;
 				}
 		}
 
-	return true;
+	return false;
 }
 
-int NormalizeWord(char* input)
+static bool NormalizeWord(char* input)
 {
+	//printf("Len: %i, containsNonChars: %d", strlen(input), containsNonChars(input));
+
+	if(input == NULL)
+		{
+			return false;
+		}
+	
 	if(strlen(input) < 3 || containsNonChars(input))
 		{
-			return 1; 
+			return false; 
 		}
 
 	for(int i = 0; i < strlen(input); i++)
 		{
 			input[i] = tolower(input[i]);
 		}
-	return 0;
+	
+	return true;
 	
 }
 
 int main(void)
 {
+
 	webpage_t* first = pageload(1, "../pages/");
 
 	char* savedword = "";
 	int pos = 0;
-
 	
-	while(savedword != NULL)
-		{
-			if(webpage_getNextWord(first, pos, &savedword))
+	while((pos = webpage_getNextWord(first, pos, &savedword)) > 0)
 				{
-					NormalizeWord(savedword);
+					if(NormalizeWord(savedword))
+						{
+							printf("%s\n", savedword);
+						}
+
+					if(savedword != NULL)
+						{
+							free(savedword);
+						}
 					
-					printf("%s\n", savedword);
-					
-					free(savedword);
 				}
-		}
+
+
+	printf("%p\n", (void*)first);
+
+	//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
 	
+	//webpage_delete(first);
+	//printf("After\n");
+	
+	exit(EXIT_SUCCESS);
+			
 }
+
