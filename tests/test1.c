@@ -1,3 +1,4 @@
+
 /* test1.c --- 
  * 
  * 
@@ -15,6 +16,7 @@
 #include <string.h>
 
 int compare_webpage(webpage_t* file1, webpage_t* file2) {
+
 	if (webpage_getDepth(file1) == webpage_getDepth(file2)) {
 		if (strcmp(webpage_getHTML(file1), webpage_getHTML(file2)) == 0) {
 			if (strcmp(webpage_getURL(file1), webpage_getURL(file2)) == 0) {
@@ -27,8 +29,6 @@ int compare_webpage(webpage_t* file1, webpage_t* file2) {
 }
 
 int main(void) {
-
-	printf("test");
 	
 	webpage_t* my_page = pageload(1, "../pages/");
 
@@ -38,7 +38,9 @@ int main(void) {
 
 	int num = compare_webpage(my_page, my_page_2);
 
-  printf("%d", num);
+  printf("%d\n", num);
 
-}	
-	
+	webpage_delete(my_page);
+	webpage_delete(my_page_2);
+
+}
