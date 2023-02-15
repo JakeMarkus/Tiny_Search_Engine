@@ -21,32 +21,20 @@
 #include "webpage.h"
 
 #include "hash.h"
-#include "queue.h"
 
 typedef struct {
 	char* word;
-	queue_t* queue_doc;
-
-} word_t;
-
-typedef struct {
-	int doc_id;
 	int count;
 
-} doc_t;
+} word_t;
 
 void freeWord(void* word) {
 
 	free(((word_t*) word)->word);
 }
 
-void freeDoc(void* word) {
-
-	word_t* word_ty = (word_t*) word;
-	qclose(word_ty->queue_doc);
-}
-
-static bool containsNonChars(char * word) {
+static bool containsNonChars(char * word)
+{
 	size_t leng = strlen(word);
 	
 	for(int i = 0; i < leng; i++)
@@ -89,39 +77,24 @@ static bool NormalizeWord(char* input)
 	
 }
 
-bool word_search(void* f, const void* s) {
-	word_t* fp = (word_t*) f;
+bool word_search(void* p, const void* s) {
+	word_t* cp = (word_t*) p;
 
 	char* sp = (char*) s;
 
-	return !(strcmp(fp->word, sp));
-}
-
-bool doc_search(void* f, const void* s) {
-	doc_t* doc = (doc_t*) f;
-
-	int* id = (int*) s;
-
-	return (doc->doc_id == *id);
+	return !(strcmp(cp->word, sp));
 }
 
 int sum = 0;
 
-void count_freq_q(void* qp) {
-	doc_t* doc = (doc_t*) qp;
-	sum += doc->count;
-}
-
 void freq_counter(void* word) {
 	word_t* word_c = (word_t*) word;
-	qapply(word_c->queue_doc, count_freq_q);
+	sum += word_c->count;
 }
 
 int main(void) {
 
-	int curr_id = 1;
-
-	webpage_t* first = pageload(curr_id, "../pages/");
+	webpage_t* first = pageload(1, "../pages/");
 
 	char* savedword = NULL;
 	int pos = 0;
@@ -135,43 +108,18 @@ int main(void) {
 			word_t* curr_word;
 
 			if ((curr_word = hsearch(freqtable, word_search, savedword, strlen(savedword))) == NULL) {
-
 				curr_word = (word_t*) malloc(sizeof(word_t));
 
 				curr_word->word = savedword;
 
-				curr_word->queue_doc = qopen();
-
-				doc_t* curr_doc = (doc_t*) malloc(sizeof(doc_t));
-
-				curr_doc->doc_id = curr_id;
-
-				curr_doc->count = 1;
-
-				qput(curr_word->queue_doc, curr_doc);
+				curr_word->count = 1;
 				
 				hput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
 			}
 
 			else {
-
-				doc_t* curr_doc;
-
-				if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &curr_id)) == NULL) {
-					curr_doc = (doc_t*) malloc(sizeof(doc_t));
-					curr_doc->doc_id = curr_id;
-					curr_doc->count = 1;
-
-					qput(curr_word->queue_doc, curr_doc);
-
-				}
-
-				else {
-					curr_doc->count++;
-				}
-
+				curr_word->count++;
 				free(savedword);
-					
 			}
 
 		}
@@ -179,6 +127,8 @@ int main(void) {
 		else free(savedword);
 
 	}
+
+	free(savedword);
 
 	//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
 
@@ -192,7 +142,6 @@ int main(void) {
 	//printf("After\n");
 
 	happly(freqtable, freeWord);
- 	happly(freqtable, freeDoc);
 
 	hclose(freqtable);
 	
