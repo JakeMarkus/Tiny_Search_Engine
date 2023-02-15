@@ -20,6 +20,19 @@
 #include "pageio.h"
 #include "webpage.h"
 
+#include "hash.h"
+
+typedef struct {
+	char* word;
+	int count;
+
+} word_t;
+
+void freeWord(void* word) {
+
+	free(((word_t*) word)->word);
+}
+
 static bool containsNonChars(char * word)
 {
 	size_t leng = strlen(word);
@@ -64,34 +77,73 @@ static bool NormalizeWord(char* input)
 	
 }
 
-int main(void)
-{
+bool word_search(void* p, const void* s) {
+	word_t* cp = (word_t*) p;
+
+	char* sp = (char*) s;
+
+	return !(strcmp(cp->word, sp));
+}
+
+int sum = 0;
+
+void freq_counter(void* word) {
+	word_t* word_c = (word_t*) word;
+	sum += word_c->count;
+}
+
+int main(void) {
 
 	webpage_t* first = pageload(1, "../pages/");
 
-	FILE* fp = fopen("1", "w");
-
-	char* savedword = "";
+	char* savedword = NULL;
 	int pos = 0;
-	
-	while((pos = webpage_getNextWord(first, pos, &savedword)) > 0)
-				{
-					if(NormalizeWord(savedword))
-						{
-							fprintf(fp, "%s\n", savedword);
-						}
 
-					if(savedword != NULL)
-						{
-							free(savedword);
-						}
-					
-				}
+	hashtable_t* freqtable = hopen(2000);
+	
+	while((pos = webpage_getNextWord(first, pos, &savedword)) > 0) {
+
+		if(NormalizeWord(savedword)) {
+
+			word_t* curr_word;
+
+			if ((curr_word = hsearch(freqtable, word_search, savedword, strlen(savedword))) == NULL) {
+				curr_word = (word_t*) malloc(sizeof(word_t));
+
+				curr_word->word = savedword;
+
+				curr_word->count = 1;
+				
+				hput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
+			}
+
+			else {
+				curr_word->count++;
+				free(savedword);
+			}
+
+		}
+
+		else free(savedword);
+
+	}
+
+	free(savedword);
 
 	//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
+
+	happly(freqtable, freq_counter);
+
+	printf("%d\n", sum);
+
+	
 	
 	webpage_delete(first);
 	//printf("After\n");
+
+	happly(freqtable, freeWord);
+
+	hclose(freqtable);
 	
 	exit(EXIT_SUCCESS);
 			
