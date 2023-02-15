@@ -69,6 +69,8 @@ int main(void)
 
 	webpage_t* first = pageload(1, "../pages/");
 
+	FILE* fp = fopen("1", "w");
+
 	char* savedword = "";
 	int pos = 0;
 	
@@ -76,7 +78,7 @@ int main(void)
 				{
 					if(NormalizeWord(savedword))
 						{
-							printf("%s\n", savedword);
+							fprintf(fp, "%s\n", savedword);
 						}
 
 					if(savedword != NULL)
