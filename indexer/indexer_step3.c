@@ -62,12 +62,13 @@ static bool NormalizeWord(char* input)
 		{
 			return false;
 		}
-	
+	//containsNonChars(): check whether a word contains characters that's
+	//other than the 26 alphabet.
 	if(strlen(input) < 3 || containsNonChars(input))
 		{
 			return false; 
 		}
-
+	//tolower() takes an uppercase alphabet and convert it to a lowercase character. 
 	for(int i = 0; i < strlen(input); i++)
 		{
 			input[i] = tolower(input[i]);
@@ -81,10 +82,12 @@ bool word_search(void* p, const void* s) {
 	word_t* cp = (word_t*) p;
 
 	char* sp = (char*) s;
-
+	//check whether the world in struct cp matches,
+	//the other input parameter string, sp. 
 	return !(strcmp(cp->word, sp));
 }
 
+//declared a global variable here?
 int sum = 0;
 
 void freq_counter(void* word) {
@@ -106,7 +109,8 @@ int main(void) {
 		if(NormalizeWord(savedword)) {
 
 			word_t* curr_word;
-
+			//if curr_word does not exist as a key in the hash table, which means we encountered
+			//a brand new word. Create a new hash table section for it. 
 			if ((curr_word = hsearch(freqtable, word_search, savedword, strlen(savedword))) == NULL) {
 				curr_word = (word_t*) malloc(sizeof(word_t));
 
@@ -123,7 +127,7 @@ int main(void) {
 			}
 
 		}
-
+		//if the word contain letters other than the 26 letter, just ignore it. 
 		else free(savedword);
 
 	}
@@ -131,7 +135,7 @@ int main(void) {
 	free(savedword);
 
 	//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
-
+	//Question: how will happly know which world to find in this case? 
 	happly(freqtable, freq_counter);
 
 	printf("%d\n", sum);
