@@ -1,5 +1,5 @@
 VALGRIND=valgrind --leak-check=full
-OFILES=queue.o hash.o webpage.o pageio_new.o
+OFILES=queue.o hash.o webpage.o pageio_new.o indexio.o
 CFLAGS=-Wall -pedantic -std=c11 -I. -g
 
 all: $(OFILES)
@@ -11,8 +11,11 @@ webpage.o: webpage.c webpage.h
 pageio_new.o: pageio_new.c pageio.h
 	gcc $(CFLAGS) -c $<
 
+indexio.o: indexio.c
+	gcc $(CFLAGS) -c $<
+
 %.v: %
 				$(VALGRIND) $<
 
 clean:
-	rm -f  webpage.o pageio_new.o ../lib/libutils.a
+	rm -f  webpage.o pageio_new.o indexio.o ../lib/libutils.a

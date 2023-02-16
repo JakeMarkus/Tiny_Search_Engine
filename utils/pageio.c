@@ -17,8 +17,8 @@
 #include "webpage.h"
 
 
-int32_t pagesave(webpage_t *pagep, int id, char *dirname)                                                                                     
-{                                                                                                                                             
+int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
+	
   FILE * fp;                                                                                                                                  
                                                                                                                                               
   char id_str [250]; //id/10 + 1                                                                                                              
@@ -41,21 +41,21 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
       return 2;                                                                                                                               
     }                                                                                                                                         
                                                                                                                                               
-  char* html = webpage_getHTML(pagep);                                                                                                        
+  //char* html = webpage_getHTML(pagep);                                                                                                        
                                                                                                                                               
-  char html_len[250];                                                                                                                         
+  char html_len[25000];                                                                                                                         
   sprintf(html_len, "%d", (int)webpage_getHTMLlen(pagep));                                                                                    
                                                                                                                                               
   char dephstr[250];                                                                                                                          
   sprintf(dephstr, "%d", (int)webpage_getDepth(pagep));  
-	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), dephstr,html_len, html );                                                   
+	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), dephstr,html_len,webpage_getHTML(pagep) );                                                   
                                                                                                                                              
   if (err < 0){                                                                                                                              
     printf("Failed to write to file!\n");                                                                                                    
     return 3;                                                                                                                                
   }                                                                                                                                          
                                                                                                                                              
-  fclose(fp);                                                                                                                                
+	// fclose(fp);                                                                                                                                
 	
   return 0;                                                                                                                                  
 }
@@ -93,9 +93,9 @@ webpage_t* pageload(int id, char* dirnm) {
 	
 	char curr_line[1000] = "";
 
-	char url [300] = "";
+	char* url = (char*) malloc(300*sizeof(char));
 	char depth[300] = "";
-	char HTML[99999] = ""; 
+	char* HTML = (char*) malloc(99999*sizeof(char));
 	
 
 
