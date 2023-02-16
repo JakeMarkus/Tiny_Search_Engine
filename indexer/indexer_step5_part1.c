@@ -128,89 +128,81 @@ int main(int argc, char* argv[]) {
  
 	
 	int curr_id = atoi(argv[1]);
-	int total = 0;
-	
-	for(int i =1; i <= curr_id; i ++ )
-		{
-			sum = 0;
-			
-			webpage_t* first = pageload(i, "../pages/");
-			
-			char* savedword = NULL;
-			int pos = 0;
-			
-			hashtable_t* freqtable = hopen(2000);
-			
-			while((pos = webpage_getNextWord(first, pos, &savedword)) > 0) {
-				
-				if(NormalizeWord(savedword)) {
-					
-					word_t* curr_word;
-					
-					if ((curr_word = hsearch(freqtable, word_search, savedword, strlen(savedword))) == NULL) {
-						
-						curr_word = (word_t*) malloc(sizeof(word_t));
-						
-						curr_word->word = savedword;
-						
-						curr_word->queue_doc = qopen();
-						
-						doc_t* curr_doc = (doc_t*) malloc(sizeof(doc_t));
-						
-						curr_doc->doc_id = curr_id;
-						
-						curr_doc->count = 1;
-						
-						qput(curr_word->queue_doc, curr_doc);
-						
-						hput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
-					}
-					
-					else {
-						
-						doc_t* curr_doc;
-						
-						if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &curr_id)) == NULL) {
-							curr_doc = (doc_t*) malloc(sizeof(doc_t));
-							curr_doc->doc_id = curr_id;
-							curr_doc->count = 1;
-							
-							qput(curr_word->queue_doc, curr_doc);
-							
-						}
-						
-						else {
-							curr_doc->count++;
-						}
-						
-						free(savedword);
-						
-					}
-					
-				}
-				
-				else free(savedword);
-				
-			}
-			
-			//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
-			
-			happly(freqtable, freq_counter);
 
-			total += sum;
-			//			printf("Intermediate sum: %d\n", sum);
-			webpage_delete(first);
-			
-			happly(freqtable, freeWord);
-			happly(freqtable, freeDoc);
-			
-			hclose(freqtable);
+	webpage_t* first = pageload(curr_id, "../pages/");
+
+	char* savedword = NULL;
+	int pos = 0;
+
+	hashtable_t* freqtable = hopen(2000);
 	
+	while((pos = webpage_getNextWord(first, pos, &savedword)) > 0) {
+
+		if(NormalizeWord(savedword)) {
+
+			word_t* curr_word;
+
+			if ((curr_word = hsearch(freqtable, word_search, savedword, strlen(savedword))) == NULL) {
+
+				curr_word = (word_t*) malloc(sizeof(word_t));
+
+				curr_word->word = savedword;
+
+				curr_word->queue_doc = qopen();
+
+				doc_t* curr_doc = (doc_t*) malloc(sizeof(doc_t));
+
+				curr_doc->doc_id = curr_id;
+
+				curr_doc->count = 1;
+
+				qput(curr_word->queue_doc, curr_doc);
+				
+				hput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
+			}
+
+			else {
+
+				doc_t* curr_doc;
+
+				if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &curr_id)) == NULL) {
+					curr_doc = (doc_t*) malloc(sizeof(doc_t));
+					curr_doc->doc_id = curr_id;
+					curr_doc->count = 1;
+
+					qput(curr_word->queue_doc, curr_doc);
+
+				}
+
+				else {
+					curr_doc->count++;
+				}
+
+				free(savedword);
+					
+			}
+
 		}
+
+		else free(savedword);
+
+	}
+
+	//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
+
+	happly(freqtable, freq_counter);
+
+	printf("%d\n", sum);
+
 	
-	printf("%i\n", total);
-	//webpage_delete(first);
+	
+	webpage_delete(first);
 	//printf("After\n");
+
+	happly(freqtable, freeWord);
+ 	happly(freqtable, freeDoc);
+
+	hclose(freqtable);
 	
 	exit(EXIT_SUCCESS);
 			
