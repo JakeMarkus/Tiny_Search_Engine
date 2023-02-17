@@ -1,5 +1,5 @@
 /* indexio.c ---
- *
+65;6800;1c *
  *
  * Author: Eren Berke Saglam
  * Created: Thu Feb 16 10:25:14 2023 (-0500)
@@ -190,7 +190,6 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
               curr_doc->count = 1;
 
               qput(curr_word->queue_doc, curr_doc);
-
             }
 
             else {
@@ -220,14 +219,14 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
 
 
 	char* counted_word;
+	doc_t* doc;
 	
-	while((counted_word = (char*)qget(words)) != NULL)
+	while((counted_word =  (char*)qget(words)) != NULL)
 			{
-				char* line = counted_word;
+				char* line = (char*)malloc(9999*sizeof(char));
+				strcat(line, counted_word);
 
 				word_t* word_struct = hsearch(freqtable, word_search, counted_word, strlen(counted_word));
-
-				doc_t* doc;
 				
 				while((doc = (doc_t*)qget(word_struct->queue_doc)) != NULL)
 					{
@@ -243,20 +242,21 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
 						strcat(line, " ");
 						strcat(line, count_str);
 
-						//freeDoc(doc);
+						free(doc);
 					}
 
 				fprintf(index_file, "%s\n", line);
-
+				free(line);
+				//free(counted_word);
 			}
 
-
+	
 			fclose(index_file);
 
       happly(freqtable, freeWord);
-			//happly(freqtable, freeDoc);
+			happly(freqtable, freeDoc);
 			qclose(words);
-      hclose(freqtable);
+			hclose(freqtable);
 
 
 			return 0;
