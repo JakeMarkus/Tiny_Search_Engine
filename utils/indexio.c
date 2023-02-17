@@ -218,12 +218,13 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
     }
 
 
-	char* counted_word;
+	char* counted_word = "";
 	doc_t* doc;
 	
 	while((counted_word =  (char*)qget(words)) != NULL)
 			{
-				char* line = (char*)malloc(9999*sizeof(char));
+				char* line = (char*)malloc(500*sizeof(char));
+				strcpy(line, "");
 				strcat(line, counted_word);
 
 				word_t* word_struct = hsearch(freqtable, word_search, counted_word, strlen(counted_word));
