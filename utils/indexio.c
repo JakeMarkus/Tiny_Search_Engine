@@ -135,7 +135,7 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
 	index_file = fopen(path, "w");
 
 	if (index_file == NULL) {
-		printf("failed to open the file");
+		printf("failed to open the file\n");
 		return 2;
 	}
 
