@@ -21,6 +21,7 @@
 
 #include "hash.h"
 #include "queue.h"
+#include "indexio.h"
 
 typedef struct {
   char* word;
@@ -261,4 +262,62 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
 
 
 			return 0;
+}
+
+hashtable_t* indexload(char* file_path) {
+	hashtable_t* table;
+	
+
+	FILE* index_file = fopen(file_path, "r");
+
+	if (index_file == NULL) {
+		printf("failed to open the file\n");
+		return NULL;
+	}
+
+	table = hopen(5000);
+
+	char buff;
+	char* word_str;
+	char* idAndFreq;
+
+	while ((buff = (char) fgetc(index_file)) != EOF) {
+		word_str = "";
+		strcat(word_str,(char*) buff);
+		if(buff == " ") {
+			word_t* curr_word = (word_t*) malloc(sizeof(word_t));
+
+			curr_word->word = word_str;
+
+			curr_word->queue_doc = qopen();
+
+			int doc_id;
+			int count;
+			//      doc_t* wordInfo = (doc_t*)malloc(size0f(doc_t));
+			while((buff = fgetc(index_file))!='\0') {
+				strcat(idAndFreq, buff);
+			}
+				//for(int space_count = 0; space_count < 2; i++) {
+			char* broke = strtok(idAndFreq, " ");
+
+			printf("yee\n");
+			//construct a queue for a word
+			while(broke != NULL){
+				doc_t* wordInfo = (doc_t*)malloc(sizeof(doc_t));  
+				doc_id = atoi(broke);
+				broke = strtok(NULL, " ");
+				count = atoi(broke);
+				broke = strtok(NULL, " ");
+				wordInfo->doc_id = doc_id;
+				wordInfo->count = count;
+				qput(curr_word->queue_doc, (void*)wordInfo);
+			}
+
+			hput(table, (void*)curr_word, curr_word->word, strlen(curr_word->word));
+		}
+	}
+
+	fclose(index_file);
+	
+	return table;
 }
