@@ -12,7 +12,11 @@
 #include "indexio.h"
 
 
-int main(void)
-{
+int main(void) {
 	indexsave("../pages/", "../indexes", 3);
+
+	hashtable_t* table = indexload("../indexes/index_3");
+
+	hclose(table);
+	
 }
