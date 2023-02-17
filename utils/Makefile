@@ -11,7 +11,7 @@ webpage.o: webpage.c webpage.h
 pageio_new.o: pageio_new.c pageio.h
 	gcc $(CFLAGS) -c $<
 
-indexio.o: indexio.c
+indexio.o: indexio.c indexio.h
 	gcc $(CFLAGS) -c $<
 
 %.v: %
