@@ -40,7 +40,7 @@ int32_t pagesave(webpage_t* pagep, int id, char* dirname) {
 	char path[250] = "";
 	//convert int id into a String
 	sprintf(id_str, "%d", id);
-	//concatonate dirname and string version of id together,
+	//concatenate dirname and string version of id together,
 	//with id in the end
 	strcat(path, dirname);
 	strcat(path, id_str);
@@ -108,6 +108,7 @@ webpage_t* pageload(int id, char* dirnm) {
 
 	char* html = malloc(sizeof(char) * (len + 1));
 	//put all the html information from file f into char* HTML
+	strcpy(html, "");
 	for (int i = 0; i < len; i++) {
 		char buff = fgetc(f);
 		if (buff == EOF) break;
@@ -116,8 +117,18 @@ webpage_t* pageload(int id, char* dirnm) {
 	}
 
 	html[len] = '\0';
-
+	
+	if((int)html[0] < 0)
+		{
+			//Look, the chars in this one aren't recognizeable since it's some rando file. Fix later
+			fclose(f);
+			free(html);
+			return webpage_new(url, depth, NULL);
+		}
+	
 	webpage_t* newpage = webpage_new(url, depth, html);
+		
+	
 	fclose(f);
 
 	return newpage;

@@ -50,7 +50,6 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 	strcat(path, dirname);
 	strcat(path, id_str);
 
-	
 	if(access(dirname, W_OK)== -1){
 		printf("Cannot access %s to save pages!\n", dirname);
 		return 1;
@@ -65,11 +64,8 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 
 	char html_len[250];
 	sprintf(html_len, "%d", (int)webpage_getHTMLlen(pagep));
-
-	char dephstr[250];
-	sprintf(dephstr, "%d", (int)webpage_getDepth(pagep));
 	
-	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), dephstr,html_len, html );
+	int err = fprintf(fp, "%s\n%s\n%s\n%s", webpage_getURL(pagep), id_str,html_len, html );
 
 	if (err < 0){
 		printf("Failed to write to file!\n");
@@ -77,7 +73,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname)
 	}
 	
 	fclose(fp);
-
+	
 	return 0;
 }
 
@@ -91,13 +87,13 @@ queue_t* url_scanner(webpage_t* my_page, hashtable_t* url_table) {
 	
 	while ((pos = webpage_getNextURL(my_page, pos, &next_url)) > 0) {
 
-		if (hsearch(url_table, url_matcher, next_url, sizeof(next_url)) == NULL) {
+		if (hsearch(url_table, url_matcher, next_url, strlen(next_url)) == NULL) {
 
-			char* copy = malloc(strlen(next_url) + 1);
+			char* copy = malloc(sizeof(next_url));
 
 			strcpy(copy, next_url);
 
-			hput(url_table, next_url, next_url, sizeof(next_url));
+			hput(url_table, next_url, next_url, strlen(next_url));
 
 			if (IsInternalURL(next_url)) {
 			
@@ -115,8 +111,6 @@ queue_t* url_scanner(webpage_t* my_page, hashtable_t* url_table) {
 				free(next_url);
 			}
 	}
-
-	//free(webpage_getHTML(my_page));
 	
 	return internalLinks;
 }
@@ -141,107 +135,77 @@ int main(int argc, char *argv[]) {
 
 	webpage_t* my_page = webpage_new(my_url, 0, NULL);
 
-	if(deph == 0)
-		{
 	if(webpage_fetch(my_page)) {
 
-		pagesave(my_page, 1, pagedir);
-		free(webpage_getHTML(my_page));
-		}
+		webpage_getHTML(my_page);
+
+	}
+
 	else {
-			printf("error in fetching html\n");
-			exit(EXIT_FAILURE);
-		}
-		}
-	
+		printf("error in fetching html\n");
+		exit(EXIT_FAILURE);
+	}
+
 	queue_t* mainqueue = qopen();
 	hashtable_t* url_table = hopen(1000);
 	
 	qput(mainqueue, my_page);
+
+	pagesave(my_page, 1, pagedir);
 	
 
 	int id = 1;
 
-	int closenum = 1;
-	
-	char* url_copy;
 	webpage_t* x;
 	
 	while( (x = (webpage_t*)qget(mainqueue) ) != NULL && webpage_getDepth(x) < deph)
 		{
 
 			webpage_fetch(x);
+			
 			queue_t* nextLayer = url_scanner(x, url_table);
-				
-			char* next_url = (char*)qget(nextLayer);
 			
-			webpage_t* next = webpage_new(next_url, webpage_getDepth(x)+1, NULL);
-			free(next_url);
-			
+			webpage_t* next =  webpage_new((char*)qget(nextLayer), webpage_getDepth(x)+1, NULL);
 			
 			while ( next != NULL)
 				{
 
-					//webpage_fetch(next);
+					webpage_fetch(next);
 
 					
+					printf("Saving  page: %s || ID: %i\n", (char*)webpage_getURL(next), id);
+				 
 					qput(mainqueue, next);
 
-					url_copy =  malloc(strlen(webpage_getURL(next)) + 1);
+					char* url_copy =  malloc(sizeof(webpage_getURL(next))));
 
 					strcpy(url_copy, webpage_getURL(next));
 					
 					hput(url_table, url_copy, url_copy, strlen(url_copy));
 			
-					if(webpage_fetch(next))
-						{
-							
-							pagesave(next, id, pagedir);
-
-							printf("Saving  page: %s || ID: %i\n", (char*)webpage_getURL(next), id);
-				 
-							id++;
-							
-							//							free(webpage_getHTML(next));
-						}
-
-
-					next_url = (char*)qget(nextLayer);
-					next =  webpage_new(next_url, webpage_getDepth(x)+1, NULL);
-					free(next_url);
+					pagesave(next, id, pagedir);
 					
+					id++;
+					
+					next =  webpage_new((char*)qget(nextLayer), webpage_getDepth(x)+1, NULL);
 				}
 
 			qclose(nextLayer);
-			printf("CLOSING num %i\n", closenum);
-			closenum++;
-
-			
-
-			//free(webpage_getHTML(x));
-			printf("yee\n");
+			printf("CLOSING\n");
 			webpage_delete(x);
 		}
 
 	//webpage_delete(my_page);
 
 	//free(my_url);
-	//free(pagedir)
+	//free(pagedir);
 	
 	for(webpage_t* leftover = (webpage_t*)qget(mainqueue); leftover != NULL; leftover = (webpage_t*)qget(mainqueue))
 		{
-			printf("CLOSING LEFTOVER num %i\n", closenum);
+			printf("CLOSING LEFTOVER\n");
 			webpage_delete(leftover);
-			closenum++;
-			}
-
-	if(x != NULL && !(webpage_getDepth(x) < deph))
-		{
-			printf("Closing num %i\n", closenum);
-			webpage_delete(x);
-			closenum++;
 		}
-	
+
 	printf("yee\n");
 	qclose(mainqueue);
 	hclose(url_table);

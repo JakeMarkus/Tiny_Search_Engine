@@ -10,209 +10,58 @@
  */
 
 
+#include <unistd.h>
+#include <stdint.h>
+#include <dirent.h>
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <ctype.h>
-#include "pageio.h"
-#include "webpage.h"
+#include "indexio.h"
 
-#include "hash.h"
-#include "queue.h"
 
-typedef struct {
-	char* word;
-	queue_t* queue_doc;
-
-} word_t;
-
-typedef struct {
-	int doc_id;
-	int count;
-
-} doc_t;
-
-void freeWord(void* word) {
-
-	free(((word_t*) word)->word);
-}
-
-void freeDoc(void* word) {
-
-	word_t* word_ty = (word_t*) word;
-	qclose(word_ty->queue_doc);
-}
-
-static bool containsNonChars(char * word) {
-	size_t leng = strlen(word);
-	
-	for(int i = 0; i < leng; i++)
-		{
-			int n = (int)word[i]; //decimal rep. of each char in word
-			
-			if ( n < 65  || n  > 122)
-				{
-					return true;
-				}
-			else if (n > 90 && n < 97 )
-				{
-					return true;
-				}
-		}
-
-	return false;
-}
-
-static bool NormalizeWord(char* input)
+int main(int argc, char* argv[])
 {
-	//printf("Len: %i, containsNonChars: %d", strlen(input), containsNonChars(input));
-
-	if(input == NULL)
-		{
-			return false;
-		}
-	
-	if(strlen(input) < 3 || containsNonChars(input))
-		{
-			return false; 
+	if(argc != 3)
+		{		
+			printf("usage: indexer <pagedir> <indexnm>\n");
+			return 1;
 		}
 
-	for(int i = 0; i < strlen(input); i++)
+	DIR *pagedir = opendir(argv[1]);
+	
+	if(pagedir == NULL)
 		{
-			input[i] = tolower(input[i]);
+			printf("Could not open directory: %s\n", argv[1]);
+			return 2;
+
 		}
-	
-	return true;
-	
-}
+	int max = 0;
+	char pathname[500];
+	strcpy(pathname, "");
+	char id_str[100];
+	strcpy(id_str, "");
 
-bool word_search(void* f, const void* s) {
-	word_t* fp = (word_t*) f;
-
-	char* sp = (char*) s;
-
-	return !(strcmp(fp->word, sp));
-}
-
-bool doc_search(void* f, const void* s) {
-	doc_t* doc = (doc_t*) f;
-
-	int* id = (int*) s;
-
-	return (doc->doc_id == *id);
-}
-
-int sum = 0;
-
-void count_freq_q(void* qp) {
-	doc_t* doc = (doc_t*) qp;
-	sum += doc->count;
-}
-
-void freq_counter(void* word) {
-	word_t* word_c = (word_t*) word;
-	qapply(word_c->queue_doc, count_freq_q);
-}
-
-int main(int argc, char* argv[]) {
-
-	if(argc != 2)
+	for(int i = 1; i < 9999; i++)
 		{
-			exit(EXIT_FAILURE);
-		}
-
-	
- 
-	
-	int curr_id = atoi(argv[1]);
-	int total = 0;
-	
-	for(int i =1; i <= curr_id; i ++ )
-		{
-			sum = 0;
+			strcat(pathname, argv[1]);
+			sprintf(id_str, "%i", i);
+			strcat(pathname, id_str);
 			
-			webpage_t* first = pageload(i, "../pages/");
-			
-			char* savedword = NULL;
-			int pos = 0;
-			
-			hashtable_t* freqtable = hopen(2000);
-			
-			while((pos = webpage_getNextWord(first, pos, &savedword)) > 0) {
+			if (access(pathname, R_OK)==-1)
+				break;
 				
-				if(NormalizeWord(savedword)) {
-					
-					word_t* curr_word;
-					
-					if ((curr_word = hsearch(freqtable, word_search, savedword, strlen(savedword))) == NULL) {
-						
-						curr_word = (word_t*) malloc(sizeof(word_t));
-						
-						curr_word->word = savedword;
-						
-						curr_word->queue_doc = qopen();
-						
-						doc_t* curr_doc = (doc_t*) malloc(sizeof(doc_t));
-						
-						curr_doc->doc_id = curr_id;
-						
-						curr_doc->count = 1;
-						
-						qput(curr_word->queue_doc, curr_doc);
-						
-						hput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
-					}
-					
-					else {
-						
-						doc_t* curr_doc;
-						
-						if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &curr_id)) == NULL) {
-							curr_doc = (doc_t*) malloc(sizeof(doc_t));
-							curr_doc->doc_id = curr_id;
-							curr_doc->count = 1;
-							
-							qput(curr_word->queue_doc, curr_doc);
-							
-						}
-						
-						else {
-							curr_doc->count++;
-						}
-						
-						free(savedword);
-						
-					}
-					
+			else
+				{
+					max = i;
 				}
-				
-				else free(savedword);
-				
-			}
-			
-			//printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
-			
-			happly(freqtable, freq_counter);
-
-			total += sum;
-			//			printf("Intermediate sum: %d\n", sum);
-			webpage_delete(first);
-			
-			happly(freqtable, freeWord);
-			happly(freqtable, freeDoc);
-			
-			hclose(freqtable);
-	
+			strcpy(pathname, "");
 		}
 	
-	printf("%i\n", total);
-	//webpage_delete(first);
-	//printf("After\n");
-	
-	exit(EXIT_SUCCESS);
-			
-}
+	closedir(pagedir);
 
+	if (indexsave(argv[1], "./", argv[2], max) != 0)
+		{
+			printf("Error in creating index!\n");
+			return 3; 
+		}
+	
+	return 0; 
+}

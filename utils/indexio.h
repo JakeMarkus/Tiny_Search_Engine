@@ -27,7 +27,7 @@
 #include "queue.h"
 
 
-int32_t indexsave(char* pages_dir, char* index_dir, int n);
+int32_t indexsave(char* pages_dir, char* index_dir, char* indexnm, int n);
 
 /* 
  * pageload -- loads the numbered filename <id> in direcory <dirnm>
@@ -36,4 +36,8 @@ int32_t indexsave(char* pages_dir, char* index_dir, int n);
  * returns: non-NULL for success; NULL otherwise
  */
 hashtable_t* indexload(char* file_path);
- 
+
+/*
+Frees the table returned above. Makes cleaner code.
+ */
+void freeIndexTable(hashtable_t* table);

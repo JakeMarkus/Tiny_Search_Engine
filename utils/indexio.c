@@ -9,6 +9,8 @@
  *
  */
 
+#define _GNU_SOURCE
+
 #include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,9 +18,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <ctype.h>
+
 #include "pageio.h"
 #include "webpage.h"
-
 #include "hash.h"
 #include "queue.h"
 #include "indexio.h"
@@ -106,7 +108,7 @@ static bool NormalizeWord(char* input)
 
 }
 
-int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
+int32_t indexsave(char* pages_dir  , char* index_dir, char* indexnm, int n) {
 	
 	FILE* index_file;
 
@@ -114,13 +116,15 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
 	char path[250] = "";
 
 	strcat(path, index_dir);
-	strcat(path, "/index");
-	strcat(path, "_");
+	strcat(path, indexnm);
+	
+	//strcat(path, "/index");
+	//strcat(path, "_");
 
 	char n_str[250] = "";
 	sprintf(n_str, "%d", n);
 
-	strcat(path, n_str);
+	//strcat(path, n_str);
 
 
 	if (access(pages_dir, R_OK) == -1) {
@@ -264,8 +268,15 @@ int32_t indexsave(char* pages_dir  , char* index_dir, int n) {
 			return 0;
 }
 
+
+void freeIndexTable(hashtable_t* table)
+{
+	happly(table, freeWord);
+	happly(table, freeDoc);
+	hclose(table);
+}
+
 hashtable_t* indexload(char* file_path) {
-	hashtable_t* table;
 	
 
 	FILE* index_file = fopen(file_path, "r");
@@ -275,49 +286,79 @@ hashtable_t* indexload(char* file_path) {
 		return NULL;
 	}
 
-	table = hopen(5000);
+	hashtable_t* indextable = hopen(5000);
 
-	char buff;
-	char* word_str;
-	char* idAndFreq;
+	char* line = "";
+	size_t len = 0;
+	bool word_found = false; 
 
-	while ((buff = (char) fgetc(index_file)) != EOF) {
-		word_str = "";
-		strcat(word_str,(char*) buff);
-		if(buff == " ") {
-			word_t* curr_word = (word_t*) malloc(sizeof(word_t));
+	bool isId = true;
 
-			curr_word->word = word_str;
+	doc_t* currdoc;
+	char* block;
+	while(getline(&line, &len, index_file) != -1)
+		{
+			line[strcspn(line, "\n")] = 0;
+			
+			//printf("%s\n", line);
+			word_t* curr_word = (word_t*)malloc(sizeof(word_t));
 
-			curr_word->queue_doc = qopen();
+			block = (char*)malloc(100*sizeof(char));
+			strcpy(block, "");
+			
+			for(int i = 0; i <= strlen(line); i++)
+				{
+					if((char)line[i] == ' ' || i == strlen(line))
+						{
+							if(!word_found)
+								{
+									char* cpy = (char*)malloc(100*sizeof(char));
+									strcpy(cpy, block);
+									//printf("word: %s\n", cpy);
+									curr_word->word = cpy;
+									curr_word->queue_doc = qopen();
+									word_found = true;
+								}
+							else if(isId)
+								{
+									currdoc = (doc_t*)malloc(sizeof(doc_t));
+									currdoc->doc_id = atoi(block);
+									//printf("id: %i\n",currdoc->doc_id);
+									isId = false;
+								}
+							else
+								{
+									currdoc->count = atoi(block);
+									qput(curr_word->queue_doc, currdoc);
+									//printf("count: %i\n", currdoc->count);
+									isId = true;
+								}
+							
+							free(block);
+							
+							block = (char*)malloc(100*sizeof(char));
+							strcpy(block, "");
+			
+						}
 
-			int doc_id;
-			int count;
-			//      doc_t* wordInfo = (doc_t*)malloc(size0f(doc_t));
-			while((buff = fgetc(index_file))!='\0') {
-				strcat(idAndFreq, buff);
-			}
-				//for(int space_count = 0; space_count < 2; i++) {
-			char* broke = strtok(idAndFreq, " ");
+					else
+						{
+							strncat(block, &line[i], 1);
+						}
+				}
 
-			printf("yee\n");
-			//construct a queue for a word
-			while(broke != NULL){
-				doc_t* wordInfo = (doc_t*)malloc(sizeof(doc_t));  
-				doc_id = atoi(broke);
-				broke = strtok(NULL, " ");
-				count = atoi(broke);
-				broke = strtok(NULL, " ");
-				wordInfo->doc_id = doc_id;
-				wordInfo->count = count;
-				qput(curr_word->queue_doc, (void*)wordInfo);
-			}
+			hput(indextable, curr_word, curr_word->word, strlen(curr_word->word));
+			word_found = false;
+			free(block);
 
-			hput(table, (void*)curr_word, curr_word->word, strlen(curr_word->word));
 		}
-	}
 
 	fclose(index_file);
-	
-	return table;
+
+	if(line){
+			free(line);
+		}
+
+
+	return indextable;
 }
