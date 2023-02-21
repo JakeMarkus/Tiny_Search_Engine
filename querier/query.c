@@ -36,10 +36,13 @@ bool isChar(char c)
 
 static char* cleanInput(char* input)
 {
+	
 	char* block = (char*)malloc(100*sizeof(char));
 	strcpy(block, "");
 
 	char* output = (char*)malloc(10000 * sizeof(char));
+
+	strcpy(output, "");
 	
 	for(int i = 0; i <= strlen(input); i++)
 		{
@@ -52,14 +55,19 @@ static char* cleanInput(char* input)
 							if(i!= strlen(input))
 								strcat(output, " ");
 						}
-
-					//free(block);
+					
+					free(block);
+					
+					block = (char*)malloc(100*sizeof(char));
 					strcpy(block, "");
+					
 				}
 			else
 				{
 					if(!isChar((char)input[i]) && input[i] != 10)
 						{
+							free(block);
+							free(output);
 							return NULL;
 						}
 					else
@@ -70,6 +78,7 @@ static char* cleanInput(char* input)
 				}
 		}
 
+	free(block);
 	return output; 
 }
 int main(void)
@@ -85,24 +94,21 @@ int main(void)
 			printf("> ");
 			if((currline = fgets(user_input, MAX_LINE, stdin)) == NULL)
 				{
-					continue; 
+					printf("\n");
+					exit(EXIT_SUCCESS);
 				}
-	 
+
 			if((currwords = (char*)cleanInput(currline)) == NULL)
 				{
 					printf("Invalid Input!\n");
 					continue;
 				}
+
+			currwords[strcspn(currwords, "\n")] = 0;
 			
-			//if(strcmp(currline, "q") == 0)
-				//{
-					//printf("yee");
-					//FREE STUFF
-					//exit(EXIT_SUCCESS);
-					//break;
-					//}
-			printf("Cleaned Input: %s", currwords);
-			
+			printf("Cleaned Input: %s\n", currwords);
+
+			free(currwords);
 			strcpy(currline, "");
 		}
 }
