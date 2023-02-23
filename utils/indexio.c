@@ -87,10 +87,14 @@ bool containsNonChars(char * word) {
 int getCount(hashtable_t* table, char*word, int id)
 {
 	 word_t* wordObj = hsearch(table, word_search, word, strlen(word));
+
+	 if(wordObj == NULL)
+		 return 0;
+	 
 	 doc_t* doc  = qsearch(wordObj->queue_doc, doc_search, &id);
 
 	 if(doc == NULL)
-		 return -1;
+		 return 0;
 	 
 	 return doc->count;
 }
