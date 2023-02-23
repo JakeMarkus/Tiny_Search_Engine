@@ -36,9 +36,67 @@ bool isChar(char c)
 	return true;
 }
 
-static char* cleanInput(char* input, hashtable_t* table)
+typedef struct
+{
+	char* word;
+	int count; 
+} word_t;
+	
+typedef struct
+{
+	char* url; 
+	queue_t* words;
+} page_t;
+
+static word_t* makeWord(char* w, int count)
+{
+	word_t* output = (word_t*) malloc(sizeof(word_t));
+
+	strcpy(output->word, w);
+	output->count = count;
+
+	return output;
+	
+}
+
+
+static void freeWord(word_t* word_s)
+{
+	free(word_s->word);
+	free(word_s);
+}
+
+static page_t* makePage(char* url)
+{
+	page_t* output = (page_t*) malloc(sizeof(page_t));
+	
+	strcpy(output->url, url);
+
+	return output; 
+}
+
+static void freePage(page_t* page)
+{
+	free(page->url);
+	free(page);
+}
+
+
+queue_t* page_q; 
+
+static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 {
 
+	page_q = qopen();
+
+	for(int i = 0; i < getNumPages(); i++)
+		{
+			qput(page_q, makePage(getUrl(pagedir, i)));
+		}
+	
+
+	
+	int count; 
 	int min = 99999999;
 	char* block = (char*)malloc(100*sizeof(char));
 	strcpy(block, "");
@@ -46,6 +104,9 @@ static char* cleanInput(char* input, hashtable_t* table)
 	char* output = (char*)malloc(10000 * sizeof(char));
 
 	strcpy(output, "");
+
+	
+
 	
 	for(int i = 0; i <= strlen(input); i++)
 		{
@@ -62,18 +123,36 @@ static char* cleanInput(char* input, hashtable_t* table)
 
 							if(strlen(block) >= 3)
 								{
-									//							printf("block: |%s|\n", block);
-									int count = getCount(table, block, 1);
-									//printf("yee0.1\n");
-									if(count < min)
+									
+									for(int i = 0; i < getNumPages(); i++)
 										{
-											min = count; 
+
+											page_t* curr_page = (page_t*)qget(page_q);
+											
+											count = getCount(table, block, i);
+
+											word_t* w = makeWord(block, count);
+
+											qput(curr_page->words, w);
+											
+											
+											
+											//if(count < min)
+												//{
+													//min = count; 
+													//}
+											
 										}
 									
-									printf("%s:%i ", block, count);
-									//printf("yee0.2\n");
+									//printf("%s:%i ", block, count);
+								}
+
+							else if(strcmp(block, "or") == 0)
+								{
+									
 								}
 						}
+					
 					
 					free(block);
 					
