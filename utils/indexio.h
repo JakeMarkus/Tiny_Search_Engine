@@ -41,3 +41,8 @@ hashtable_t* indexload(char* file_path);
 Frees the table returned above. Makes cleaner code.
  */
 void freeIndexTable(hashtable_t* table);
+
+
+bool containsNonChars(char* word);
+
+int getCount(hashtable_t* table, char*word, int id);

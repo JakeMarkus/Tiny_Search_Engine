@@ -1,5 +1,5 @@
 /* indexio.c ---
-65;6800;1c *
+0;136;0c65;6800;1c *
  *
  * Author: Eren Berke Saglam
  * Created: Thu Feb 16 10:25:14 2023 (-0500)
@@ -65,7 +65,7 @@ bool doc_search(void* f, const void* s) {
   return (doc->doc_id == *id);
 }
 
-static bool containsNonChars(char * word) {
+bool containsNonChars(char * word) {
   size_t leng = strlen(word);
 
   for(int i = 0; i < leng; i++)
@@ -83,6 +83,16 @@ static bool containsNonChars(char * word) {
     }
 
   return false;
+}
+int getCount(hashtable_t* table, char*word, int id)
+{
+	 word_t* wordObj = hsearch(table, word_search, word, strlen(word));
+	 doc_t* doc  = qsearch(wordObj->queue_doc, doc_search, &id);
+
+	 if(doc == NULL)
+		 return -1;
+	 
+	 return doc->count;
 }
 
 static bool NormalizeWord(char* input)
