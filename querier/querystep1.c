@@ -1,5 +1,5 @@
 /* query.c --- 
-0;136;0c * 
+ * 
  * 
  * Author: Jacob R. Markus
  * Created: Sun Feb 19 16:29:08 2023 (-0500)
@@ -14,10 +14,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <string.h>
-#include "hash.h"
 #include "indexio.h"
-
+#include <string.h>
 #define MAX_LINE 100
 
 bool isChar(char c)
@@ -36,10 +34,9 @@ bool isChar(char c)
 	return true;
 }
 
-static char* cleanInput(char* input, hashtable_t* table)
+static char* cleanInput(char* input)
 {
-
-	int min = 99999999;
+	
 	char* block = (char*)malloc(100*sizeof(char));
 	strcpy(block, "");
 
@@ -56,27 +53,14 @@ static char* cleanInput(char* input, hashtable_t* table)
 							strcat(output, block);
 							
 							if(i!= strlen(input))
-								{
-									strcat(output, " ");
-								}
-
-							//							printf("block: |%s|\n", block);
-							int count = getCount(table, block, 1);
-							//printf("yee0.1\n");
-							if(count < min)
-								{
-									min = count; 
-								}
-							
-							printf("%s:%i ", block, count);
-							//printf("yee0.2\n");
+								strcat(output, " ");
 						}
 					
 					free(block);
 					
 					block = (char*)malloc(100*sizeof(char));
 					strcpy(block, "");
-					//printf("yee1\n");
+					
 				}
 			else
 				{
@@ -93,9 +77,7 @@ static char* cleanInput(char* input, hashtable_t* table)
 						}
 				}
 		}
-	//printf("yee2\n");
 
-	printf(" -%i\n", min);
 	free(block);
 	return output; 
 }
@@ -106,7 +88,6 @@ int main(void)
 	char user_input[MAX_LINE];
 	//strcpy(currline, "");
 	char* currwords;
-	hashtable_t* table = indexload("../indexer/here");
 	
 	while(true)
 		{
@@ -114,17 +95,16 @@ int main(void)
 			if((currline = fgets(user_input, MAX_LINE, stdin)) == NULL)
 				{
 					printf("\n");
-					freeIndexTable(table);
 					exit(EXIT_SUCCESS);
 				}
 
-			currline[strcspn(currline, "\n")] = 0;
-			
-			if((currwords = (char*)cleanInput(currline, table)) == NULL)
+			if((currwords = (char*)cleanInput(currline)) == NULL)
 				{
 					printf("Invalid Input!\n");
 					continue;
 				}
+
+			currwords[strcspn(currwords, "\n")] = 0;
 			
 			printf("Cleaned Input: %s\n", currwords);
 
