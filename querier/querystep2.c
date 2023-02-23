@@ -60,16 +60,19 @@ static char* cleanInput(char* input, hashtable_t* table)
 									strcat(output, " ");
 								}
 
-							//							printf("block: |%s|\n", block);
-							int count = getCount(table, block, 1);
-							//printf("yee0.1\n");
-							if(count < min)
+							if(strlen(block) >= 3)
 								{
-									min = count; 
+									//							printf("block: |%s|\n", block);
+									int count = getCount(table, block, 1);
+									//printf("yee0.1\n");
+									if(count < min)
+										{
+											min = count; 
+										}
+									
+									printf("%s:%i ", block, count);
+									//printf("yee0.2\n");
 								}
-							
-							printf("%s:%i ", block, count);
-							//printf("yee0.2\n");
 						}
 					
 					free(block);
@@ -95,7 +98,7 @@ static char* cleanInput(char* input, hashtable_t* table)
 		}
 	//printf("yee2\n");
 
-	printf(" - min: %i\n", min);
+	printf(" -%i\n", min);
 	free(block);
 	return output; 
 }
