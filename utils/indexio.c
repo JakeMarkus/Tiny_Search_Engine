@@ -32,10 +32,36 @@ typedef struct {
 } word_t;
 
 typedef struct {
-  int doc_id;
+	int doc_id;
   int count;
 
 } doc_t;
+
+
+char* getUrl(char* pagedir, int id)
+{
+	char* path = "";
+
+	strcat(path, pagedir);
+  
+	char* id_str = "";
+
+	sprintf(id_str, "%i", id);
+	strcat(path, id_str);
+	FILE* f = fopen(path, "r");
+	if(f == NULL){
+		printf("Failed to open file.\n");
+		return NULL;
+	}
+	char* line = "";
+	size_t len = 0;
+	getline(&line, &len, f);
+
+	fclose(f);
+	return line; 
+}
+
+
 
 void freeWord(void* word) {
 
@@ -84,6 +110,14 @@ bool containsNonChars(char * word) {
 
   return false;
 }
+
+int page_num;
+
+int getNumPages(void)
+{
+	return page_num;
+}
+
 int getCount(hashtable_t* table, char*word, int id)
 {
 	 word_t* wordObj = hsearch(table, word_search, word, strlen(word));
@@ -337,6 +371,11 @@ hashtable_t* indexload(char* file_path) {
 								{
 									currdoc = (doc_t*)malloc(sizeof(doc_t));
 									currdoc->doc_id = atoi(block);
+
+									if(atoi(block) > page_num)
+										{
+											page_num = atoi(block);
+										}
 									//printf("id: %i\n",currdoc->doc_id);
 									isId = false;
 								}

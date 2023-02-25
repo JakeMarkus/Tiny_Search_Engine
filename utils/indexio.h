@@ -46,3 +46,8 @@ void freeIndexTable(hashtable_t* table);
 bool containsNonChars(char* word);
 
 int getCount(hashtable_t* table, char*word, int id);
+
+
+int getNumPages(void);
+
+char* getUrl(char* pagedir, int id);
