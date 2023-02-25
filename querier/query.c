@@ -67,12 +67,12 @@ static word_t* makeWord(char* w, int count)
 }
 
 
-static void freeWord(word_t* word_s)
+static void freeWord(void* word_s)
 {
-	printf("yee72\n");
-	free(word_s->word);
-	printf("yee74\n");
-	free(word_s);
+
+	word_t* wordT = (word_t*) word_s;
+	free(wordT->word);
+	//	free(word_s);
 }
 
 static page_t* makePage(char* url, int id)
@@ -94,26 +94,22 @@ static void freePageAts(void* page)
 	page_t* p = (page_t*)page;
 	
 	free(p->url);
+
+	qapply(p->words, freeWord);
+	
 	qclose(p->words);
 	
 	//free(page);
 }
 
-static void printPage(page_t* page)
+static void printPage(void* page)
 {
-	printf("rank: %i: doc: %i: %s\n", page->rank, page->id, page->url);
+
+	page_t* pageT = (page_t*) page;
+	printf("rank: %i: doc: %i: %s\n", pageT->rank, pageT->id, pageT->url);
 }
 
-static void freePageQueue(queue_t* q)
-{
-	for(page_t* p = (page_t*)qget(q); q != NULL; p = (page_t*)qget(q))
-		{
-			if(p != NULL && p->url != NULL)
-				free(p->url);
-			}
 
-	qclose(q);
-}
 queue_t* page_q; 
 
 static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
@@ -224,6 +220,7 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 
 	//printf(" -%i\n", min);
 	free(block);
+
 	return output; 
 }
 int main(void)
@@ -243,10 +240,11 @@ int main(void)
 					printf("\n");
 					freeIndexTable(table);
 					//qapply(page_q, freePageAts);
-					printf("yee\n");
 					qclose(page_q);
 					//freePageQueue(page_q);
 					exit(EXIT_SUCCESS);
+
+					
 				}
 
 			currline[strcspn(currline, "\n")] = 0;
@@ -262,5 +260,7 @@ int main(void)
 
 			free(currwords);
 			strcpy(currline, "");
+
+			qapply(page_q, freePageAts);
 		}
 }
