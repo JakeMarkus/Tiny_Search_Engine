@@ -9,4 +9,4 @@ query:
 querystep2:
 			gcc $(CFLAGS) querystep2.c $(LIBS) -o $@
 clean:
-			rm -f query querystep2
+			rm -f query

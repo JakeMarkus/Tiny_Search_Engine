@@ -54,7 +54,7 @@ char* getUrl(char* pagedir, int id) {
 	
 	strcat(path, id_str);
 	
-	//printf("%s\n", path);
+	printf("%s\n", path);
 	FILE* f = fopen(path, "r");
 	if(f == NULL){
 		printf("Failed to open file.\n");
@@ -67,10 +67,7 @@ char* getUrl(char* pagedir, int id) {
 	
 	getline(&line, &len, f);
 
-	free(path);
-	free(id_str);
 	fclose(f);
-	line[strcspn(line, "\n")] = 0;
 	return line; 
 }
 
