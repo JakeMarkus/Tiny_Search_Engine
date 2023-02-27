@@ -1,5 +1,5 @@
 /* query.c --- 
-0;136;0c * 
+0;136;0c0;136;0c0;136;0c * 
  * 
  * Author: Jacob R. Markus
  * Created: Sun Feb 19 16:29:08 2023 (-0500)
@@ -23,6 +23,15 @@
 #include <sys/types.h>
 
 #define MAX_LINE 100
+
+
+int min(int a, int b)
+{
+	if(a <= b)
+		return a;
+	return b;
+			
+}
 
 bool isChar(char c)
 {
@@ -110,7 +119,12 @@ static void printPage(void* page)
 }
 
 
+bool pageTruer(void* e, const void* yee)
+{
+	return true;
+}
 queue_t* page_q; 
+
 
 static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 {
@@ -153,15 +167,17 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 				{
 					if(strcmp(block, "") != 0)
 						{
-							strcat(output, block);
-							
-							if(i!= strlen(input))
-								{
-									strcat(output, " ");
-								}
 
-							if(strlen(block) >= 3)
+							if(strcmp(block, "or") == 0 || strlen(block) >= 3)
 								{
+
+									if(strcmp(block, "or") != 0 && strcmp(block, "and") != 0)
+										strcat(output, block);
+									
+									if(i!= strlen(input) && strcmp(block, "or")!=0 && strcmp(block, "and") != 0)
+										{
+											strcat(output, " ");
+										}
 									
 									for(int i = 1; i <= getNumPages(); i++)
 										{
@@ -176,10 +192,10 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 											
 											
 											//											printf("%s count: %i\n", curr_page->url, count);
-											if(count < curr_page->rank)
-												{
-													curr_page->rank = count; 
-												}
+											//if(count < curr_page->rank)
+												//{
+													//curr_page->rank = count; 
+													//}
 
 											qput(page_q, curr_page);
 											
@@ -223,6 +239,98 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 
 	return output; 
 }
+
+void rankPage(void* p)
+{
+	page_t* page = (page_t*)p;
+		
+
+  int rank = 0;
+
+  word_t* prev_word = NULL;
+
+  for(word_t* word = qget(page->words); word != NULL; word = qget(page->words))
+    {
+			if(prev_word != NULL)
+				{
+					printf("Word count: %i\n", word->count);
+					if(strcmp(prev_word->word, "or") == 0)
+						{
+							rank += word->count;
+						}
+					else if( strcmp(word->word, "or") != 0 && strcmp(word->word, "and") != 0)
+						{
+							rank = min(rank, word->count);
+						}
+				}
+			else
+				{
+					rank = word->count;
+				}
+
+			if(prev_word != NULL)
+				{
+					freeWord(prev_word);
+					free(prev_word);
+				}
+			prev_word = word;
+			
+    }
+
+
+	if(prev_word != NULL)
+		{
+			freeWord(prev_word);
+			free(prev_word);
+		}
+	page->rank = rank;
+}
+
+bool isValid(page_t* page)
+{
+	bool result = true;
+	
+	queue_t* replacement = qopen();
+
+	word_t* prev_word = NULL;
+
+	int i = 0;
+	
+	for(word_t* word = qget(page->words); word != NULL; word = qget(page->words))
+		{
+
+			if(i ==0 && (strcmp(word->word, "and") == 0 || strcmp(word->word, "or") == 0))
+				{
+					result = false;
+				}
+
+			if(prev_word != NULL)
+				{
+					if(strcmp(prev_word->word, "and") == 0 || strcmp(prev_word->word, "or") == 0)
+						{
+							if(strcmp(word->word, "and") == 0 || strcmp(word->word, "or") == 0)
+								{
+									result = false;
+								}
+						}
+				}
+			
+			
+			prev_word = word;
+			qput(replacement, word);
+			i++;
+		}
+
+	if(strcmp(prev_word->word, "and") == 0 || strcmp(prev_word->word, "or") ==0)
+		result = false;
+	
+	qclose(page->words);
+	page->words = replacement;
+
+	return result;
+}
+
+
 int main(void)
 {
 	char* currline;
@@ -240,7 +348,8 @@ int main(void)
 					printf("\n");
 					freeIndexTable(table);
 					//qapply(page_q, freePageAts);
-					qclose(page_q);
+					if(page_q != NULL)
+						qclose(page_q);
 					//freePageQueue(page_q);
 					exit(EXIT_SUCCESS);
 
@@ -249,18 +358,36 @@ int main(void)
 
 			currline[strcspn(currline, "\n")] = 0;
 			
-			if((currwords = (char*)cleanInput(currline, table, "../pages/")) == NULL)
+			if((currwords = (char*)cleanInput(currline, table, "../pages/")) == NULL || strcmp(currwords, "") == 0)
 				{
 					printf("Invalid Input!\n");
+					//qapply(page_q, freePageAts);
+					free(currwords);
+					qapply(page_q, freePageAts);
+					if(page_q != NULL)
+						{
+							qclose(page_q);
+							page_q = NULL;
+						}
 					continue;
 				}
 
+			else if (!isValid(qsearch(page_q, pageTruer, NULL)))
+				{
+					printf("Invalid Input!\n");
+					free(currwords);
+					qapply(page_q, freePageAts);
+					continue;
+				}
+			
+			qapply(page_q, rankPage);
 			qapply(page_q, printPage);
 			printf("Cleaned Input: %s\n", currwords);
 
 			free(currwords);
 			strcpy(currline, "");
 
+			
 			qapply(page_q, freePageAts);
 		}
 }
