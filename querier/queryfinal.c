@@ -263,7 +263,7 @@ void rankPage(void* p)
     {
 			if(prev_word != NULL)
 				{
-					printf("Word count: %i\n", word->count);
+					//printf("Word count: %i\n", word->count);
 					if(strcmp(prev_word->word, "or") == 0)
 						{
 							rank += word->count;
@@ -442,7 +442,7 @@ int main(int argc, char* argv[]) {
 			
 			qapply(page_q, rankPage);
 			qapply(page_q, printPage);
-			printf("Cleaned Input: %s\n", currwords);
+			printf("Keywords: %s\n", currwords);
 			
 
 			free(currwords);
