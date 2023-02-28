@@ -378,10 +378,10 @@ bool checkArgs(int argnum, char* args[]) {
 	
 int main(int argc, char* argv[]) {
 
-	bool error = checkArgs(argc, argv);
+	bool correct = checkArgs(argc, argv);
 
-	if (!error) {
-		printf("error with code %d, aborting\n", error);
+	if (!correct) {
+		printf("error in passed arguments");
 		exit(EXIT_FAILURE);
 	}
 	
