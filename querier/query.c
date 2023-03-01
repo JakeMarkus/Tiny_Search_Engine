@@ -21,6 +21,8 @@
 #include "webpage.h"
 #include <dirent.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include "lqueue.h"
 
 #define MAX_LINE 100
 
@@ -57,7 +59,7 @@ typedef struct {
 	
 typedef struct {
 	char* url; 
-	queue_t* words;
+	lqueue_t* words;
 	int rank;
 	int id;
 } page_t;
@@ -104,9 +106,9 @@ static void freePageAts(void* page)
 	
 	free(p->url);
 
-	qapply(p->words, freeWord);
+	lqapply(p->words, freeWord);
 	
-	qclose(p->words);
+	lqclose(p->words);
 	
 	//free(page);
 }
@@ -118,18 +120,27 @@ static void printPage(void* page)
 	printf("rank: %i: doc: %i: %s\n", pageT->rank, pageT->id, pageT->url);
 }
 
+FILE* queries_output;
+
+static void printPageFile(void* page) {
+	page_t* pageT = (page_t*) page;
+	fprintf(queries_output, "rank: %i: doc: %i: %s\n", pageT->rank, pageT->id, pageT->url);
+}
+
 
 bool pageTruer(void* e, const void* yee)
 {
 	return true;
 }
-queue_t* page_q; 
+lqueue_t* page_q; 
 
 
 static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 {
 
-	page_q = qopen();
+	if (page_q != NULL) lqclose(page_q);
+
+	page_q = lqopen();
 
 	int limit = getNumPages();
 
@@ -144,7 +155,7 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 			page_t* page = makePage(url, i);
 
 			free(url);
-			qput(page_q, page);
+			lqput(page_q, page);
 
 		}
 	
@@ -182,13 +193,13 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 									for(int i = 1; i <= getNumPages(); i++)
 										{
 
-											page_t* curr_page = (page_t*)qget(page_q);
+											page_t* curr_page = (page_t*)lqget(page_q);
 
 											count = getCount(table, block, i);
 
 											word_t* w = makeWord(block, count);
 
-											qput(curr_page->words, w);
+											lqput(curr_page->words, w);
 											
 											
 											//											printf("%s count: %i\n", curr_page->url, count);
@@ -197,7 +208,7 @@ static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 													//curr_page->rank = count; 
 													//}
 
-											qput(page_q, curr_page);
+											lqput(page_q, curr_page);
 											
 										}
 									
@@ -249,11 +260,11 @@ void rankPage(void* p)
 
   word_t* prev_word = NULL;
 
-  for(word_t* word = qget(page->words); word != NULL; word = qget(page->words))
+  for(word_t* word = lqget(page->words); word != NULL; word = lqget(page->words))
     {
 			if(prev_word != NULL)
 				{
-					printf("Word count: %i\n", word->count);
+					//printf("Word count: %i\n", word->count);
 					if(strcmp(prev_word->word, "or") == 0)
 						{
 							rank += word->count;
@@ -290,13 +301,13 @@ bool isValid(page_t* page)
 {
 	bool result = true;
 	
-	queue_t* replacement = qopen();
+	queue_t* replacement = lqopen();
 
 	word_t* prev_word = NULL;
 
 	int i = 0;
 	
-	for(word_t* word = qget(page->words); word != NULL; word = qget(page->words))
+	for(word_t* word = lqget(page->words); word != NULL; word = lqget(page->words))
 		{
 
 			if(i ==0 && (strcmp(word->word, "and") == 0 || strcmp(word->word, "or") == 0))
@@ -317,28 +328,78 @@ bool isValid(page_t* page)
 			
 			
 			prev_word = word;
-			qput(replacement, word);
+			lqput(replacement, word);
 			i++;
 		}
 
 	if(strcmp(prev_word->word, "and") == 0 || strcmp(prev_word->word, "or") ==0)
 		result = false;
 	
-	qclose(page->words);
+	lqclose(page->words);
 	page->words = replacement;
 
 	return result;
 }
 
+bool checkArgs(int argnum, char* args[]) {
 
-int main(void)
-{
+	if (argnum < 3 || argnum > 6) {
+		printf("usage: query <pageDirectory> <indexFile> [-q <queriesFile> <outputFile>]\n");
+		return false;
+	}
+
+	if(access(args[1], R_OK) != 0) {
+		printf("error: cannot access the page directory\n");
+		return false;
+	}
+
+	if(access(args[2], R_OK) != 0) {
+		printf("error: cannot access index file\n");
+		return false;
+	}
+
+	if (argnum > 3) {
+
+		if (strcmp(args[3], "-q") != 0) {
+			printf("usage: query <pageDirectory> <indexFile> [-q <queriesFile> <outputFile>]\n");
+			return false;
+		}
+
+		else {
+
+			if (argnum != 6) {
+				printf("usage: query <pageDirectory> <indexFile> [-q <queriesFile> <outputFile>]\n");
+				return false;
+			}
+
+			if (access(args[4], R_OK) != 0) {
+				printf("error in reading input file\n");
+				return false;
+			}
+			return true;
+		}
+	}
+	
+	return true;
+}
+
+	
+int main(int argc, char* argv[]) {
+
+	bool correct = checkArgs(argc, argv);
+
+	if (!correct) {
+		exit(EXIT_FAILURE);
+	}
+	
 	char* currline;
 
 	char user_input[MAX_LINE];
 	//strcpy(currline, "");
 	char* currwords;
-	hashtable_t* table = indexload("../indexer/here");
+	hashtable_t* table = indexload(argv[2]);
+
+	if (argc == 3) {
 	
 	while(true)
 		{
@@ -349,7 +410,7 @@ int main(void)
 					freeIndexTable(table);
 					//qapply(page_q, freePageAts);
 					if(page_q != NULL)
-						qclose(page_q);
+						lqclose(page_q);
 					//freePageQueue(page_q);
 					exit(EXIT_SUCCESS);
 
@@ -358,36 +419,91 @@ int main(void)
 
 			currline[strcspn(currline, "\n")] = 0;
 			
-			if((currwords = (char*)cleanInput(currline, table, "../pages/")) == NULL || strcmp(currwords, "") == 0)
+			if((currwords = (char*)cleanInput(currline, table, argv[1])) == NULL || strcmp(currwords, "") == 0)
 				{
 					printf("Invalid Input!\n");
 					//qapply(page_q, freePageAts);
 					free(currwords);
-					qapply(page_q, freePageAts);
+					lqapply(page_q, freePageAts);
 					if(page_q != NULL)
 						{
-							qclose(page_q);
-							page_q = NULL;
+							lqclose(page_q);
 						}
 					continue;
 				}
 
-			else if (!isValid(qsearch(page_q, pageTruer, NULL)))
+			else if (!isValid(lqsearch(page_q, pageTruer, NULL)))
 				{
 					printf("Invalid Input!\n");
 					free(currwords);
-					qapply(page_q, freePageAts);
+					lqapply(page_q, freePageAts);
+					//					qclose(page_q);
 					continue;
 				}
 			
-			qapply(page_q, rankPage);
-			qapply(page_q, printPage);
-			printf("Cleaned Input: %s\n", currwords);
+			lqapply(page_q, rankPage);
+			lqapply(page_q, printPage);
+			printf("Keywords: %s\n", currwords);
+			
 
 			free(currwords);
 			strcpy(currline, "");
 
 			
-			qapply(page_q, freePageAts);
+			lqapply(page_q, freePageAts);
+			
 		}
+	}
+
+	else {
+
+		FILE* queries = fopen(argv[4], "r");
+		queries_output = fopen(argv[5], "w");
+
+		char file_input[MAX_LINE];
+
+		while ((currline = fgets(file_input, 100, queries)) != NULL) {
+
+			currline[strcspn(currline, "\n")] = 0;
+
+			if ((currwords = (char*) cleanInput(currline, table, argv[1])) == NULL || strcmp(currwords, "") == 0) {
+				printf("Invalid input\n");
+
+				free(currwords);
+				lqapply(page_q, freePageAts);
+
+				if(page_q != NULL) lqclose(page_q);
+
+				continue;
+			}
+
+			else if (!isValid(qsearch(page_q, pageTruer, NULL))) {
+
+				printf("Invalid input\n");
+				free(currwords);
+				lqapply(page_q, freePageAts);
+
+				continue;
+			}
+
+			lqapply(page_q, rankPage);
+			
+			lqapply(page_q, printPageFile);
+			fprintf(queries_output, "\n");
+
+			free(currwords);
+			strcpy(currline, "");
+
+			lqapply(page_q, freePageAts);
+		}
+
+		fclose(queries);
+		fclose(queries_output);
+
+		freeIndexTable(table);
+
+		if(page_q != NULL) lqclose(page_q);
+
+		exit(EXIT_SUCCESS);
+	}
 }
