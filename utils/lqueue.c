@@ -33,8 +33,11 @@ lqueue_t* lqopen()
     return NULL;
   }
 
-	ip->q = qopen();
 	pthread_mutex_init(&ip->mut, NULL);
+
+	pthread_mutex_lock(&ip->mut);
+	ip->q = qopen();
+	pthread_mutex_unlock(&ip->mut);
 
 	return (lqueue_t*)ip;
 	
@@ -71,7 +74,7 @@ void lqapply(lqueue_t* qp, void(*fn)(void* elementp))
 	lqueue_mod_t* ip = (lqueue_mod_t*)qp;
 
 	pthread_mutex_lock(&ip->mut);
-	qapply(ip, fn);
+	qapply(ip->q, fn);
 	pthread_mutex_unlock(&ip->mut);
 }
 
@@ -80,15 +83,19 @@ void* lqsearch(lqueue_t* qp, bool(*searchfn)(void* elementp, const void* keyp),
 {
 	lqueue_mod_t* ip = (lqueue_mod_t*)qp;
 	pthread_mutex_lock(&ip->mut);
-	void* output = qsearch(ip, searchfn, skeyp);
+	void* output = qsearch(ip->q, searchfn, skeyp);
 	pthread_mutex_unlock(&ip->mut);
 	return output;
 }
 
 
 void lqclose(lqueue_t* qp)
-{
+{	
 	lqueue_mod_t* ip= (lqueue_mod_t*)qp;
+
+	
+	printf("Q pointer: %p\n", (void*)ip->q);
+
 	pthread_mutex_lock(&ip->mut);
 	qclose(ip->q);
 	pthread_mutex_unlock(&ip->mut);

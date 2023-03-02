@@ -129,6 +129,8 @@ queue_t* page_q;
 static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 {
 
+	if (page_q != NULL) qclose(page_q);
+
 	page_q = qopen();
 
 	int limit = getNumPages();
@@ -338,7 +340,7 @@ int main(void)
 	char user_input[MAX_LINE];
 	//strcpy(currline, "");
 	char* currwords;
-	hashtable_t* table = indexload("../indexer/depth3");
+	hashtable_t* table = indexload("../indexer/here");
 	
 	while(true)
 		{
@@ -367,7 +369,6 @@ int main(void)
 					if(page_q != NULL)
 						{
 							qclose(page_q);
-							page_q = NULL;
 						}
 					continue;
 				}
@@ -377,6 +378,7 @@ int main(void)
 					printf("Invalid Input!\n");
 					free(currwords);
 					qapply(page_q, freePageAts);
+					//					qclose(page_q);
 					continue;
 				}
 			
@@ -389,5 +391,6 @@ int main(void)
 
 			
 			qapply(page_q, freePageAts);
+			
 		}
 }

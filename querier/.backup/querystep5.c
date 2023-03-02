@@ -21,6 +21,7 @@
 #include "webpage.h"
 #include <dirent.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define MAX_LINE 100
 
@@ -128,6 +129,8 @@ queue_t* page_q;
 
 static char* cleanInput(char* input, hashtable_t* table, char* pagedir)
 {
+
+	if (page_q != NULL) qclose(page_q);
 
 	page_q = qopen();
 
@@ -330,15 +333,64 @@ bool isValid(page_t* page)
 	return result;
 }
 
+bool quiet;
 
-int main(void)
-{
+bool checkArgs(int argnum, char* args[]) {
+
+	if (argnum < 3 || argnum > 6) {
+		printf("usage: query <pageDirectory> <indexFile> [-q]\n");
+		return false;
+	}
+
+	if(access(args[2], R_OK) != 0) {
+		printf("error: cannot access index file\n");
+		return false;
+	}
+
+	if (argnum > 3) {
+
+		if (strcmp(args[3], "-q") != 0) {
+			printf("usage: query <pageDirectory> <indexFile> [-q]\n");
+			return false;
+		}
+
+		else {
+
+			if (argnum != 6) {
+				printf("usage: query <pageDirectory> <indexFile> [-q]\n");
+				return false;
+			}
+
+			if (access(args[4], R_OK) != 0) {
+				printf("error in reading input file\n");
+				return false;
+			}
+
+			quiet = true;
+			return true;
+		}
+	}
+
+	quiet = false;
+	return true;
+}
+
+	
+int main(int argc, char* argv[]) {
+
+	bool correct = checkArgs(argc, argv);
+
+	if (!correct) {
+		printf("error in passed arguments");
+		exit(EXIT_FAILURE);
+	}
+	
 	char* currline;
 
 	char user_input[MAX_LINE];
 	//strcpy(currline, "");
 	char* currwords;
-	hashtable_t* table = indexload("../indexer/depth3");
+	hashtable_t* table = indexload(argv[2]);
 	
 	while(true)
 		{
@@ -358,7 +410,7 @@ int main(void)
 
 			currline[strcspn(currline, "\n")] = 0;
 			
-			if((currwords = (char*)cleanInput(currline, table, "../pages/")) == NULL || strcmp(currwords, "") == 0)
+			if((currwords = (char*)cleanInput(currline, table, argv[1])) == NULL || strcmp(currwords, "") == 0)
 				{
 					printf("Invalid Input!\n");
 					//qapply(page_q, freePageAts);
@@ -367,7 +419,6 @@ int main(void)
 					if(page_q != NULL)
 						{
 							qclose(page_q);
-							page_q = NULL;
 						}
 					continue;
 				}
@@ -377,6 +428,7 @@ int main(void)
 					printf("Invalid Input!\n");
 					free(currwords);
 					qapply(page_q, freePageAts);
+					//					qclose(page_q);
 					continue;
 				}
 			
@@ -389,5 +441,6 @@ int main(void)
 
 			
 			qapply(page_q, freePageAts);
+			
 		}
 }

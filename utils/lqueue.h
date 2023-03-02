@@ -20,21 +20,21 @@
 typedef void lqueue_t;
 
 /* create an empty queue */
-queue_t* lqopen(void);
+lqueue_t* lqopen(void);
 
 /* deallocate a queue, frees everything in it */
-void lqclose(queue_t *qp);
+void lqclose(lqueue_t *qp);
 
 /* put element at the end of the queue
  * returns 0 is successful; nonzero otherwise
  */
-int32_t lqput(queue_t *qp, void *elementp);
+int32_t lqput(lqueue_t *qp, void *elementp);
 
 /* get the first first element from queue, removing it from the queue */
-void* lqget(queue_t *qp);
+void* lqget(lqueue_t *qp);
 
 /* apply a function to every element of the queue */
-void lqapply(queue_t *qp, void (*fn)(void* elementp));
+void lqapply(lqueue_t *qp, void (*fn)(void* elementp));
 
 /* search a queue using a supplied boolean function
  * skeyp -- a key to search for
@@ -46,7 +46,7 @@ void lqapply(queue_t *qp, void (*fn)(void* elementp));
  * returns a pointer to an element, or NULL if not found
  */
 
-void* lqsearch(queue_t *qp,
+void* lqsearch(lqueue_t *qp,
               bool (*searchfn)(void* elementp,const void* keyp),
               const void* skeyp);
 
