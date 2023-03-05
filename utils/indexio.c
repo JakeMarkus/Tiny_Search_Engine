@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #include "lqueue.h"
 #include "lhash.h"
@@ -39,6 +40,14 @@ typedef struct {
 
 } doc_t;
 
+
+static int min(int a, int b)
+{
+	if(a <= b)
+		return a;
+	return b;
+			
+}
 
 char* getUrl(char* pagedir, int id) {
 
@@ -342,7 +351,7 @@ typedef struct tableinput{
 } sharedIndexInfo_t;
 
 
-sharedIndexInfo_t* makeSharedIndexInfo(lhashtable_t* f, lqueue_t* w, char* p, int i, pthread_mutex_t m)
+sharedIndexInfo_t* makeSharedIndexInfo(lhashtable_t* f, lqueue_t* w, char* p, int i)
 {
 	sharedIndexInfo_t* output = (sharedIndexInfo_t*)malloc(sizeof(sharedIndexInfo_t));
 
@@ -350,7 +359,7 @@ sharedIndexInfo_t* makeSharedIndexInfo(lhashtable_t* f, lqueue_t* w, char* p, in
 	output->words = w;
 	output->pages_dir = p;
 	output->i = i;
-	output->mut = m;
+	pthread_mutex_init(&output->mut, NULL);
 
 	return output;
 }
@@ -360,11 +369,11 @@ void freeSharedIndexInfo(sharedIndexInfo_t* in)
 	lhclose(in->freqtable);
 	lqclose(in->words);
 	free(in->pages_dir);
-	pthread_mutex_destroy(in->mut);
+	pthread_mutex_destroy(&in->mut);
 }
 
 
-void addToTable(void* in)
+void* addToTable(void* in)
 {
 
 	sharedIndexInfo_t* input = (sharedIndexInfo_t*)in;
@@ -397,14 +406,14 @@ void addToTable(void* in)
 									
 									doc_t* curr_doc = (doc_t*) malloc(sizeof(doc_t));
 									
-									curr_doc->doc_id = i;
+									curr_doc->doc_id = input->i;
 									
 									curr_doc->count = 1;
 									
 									
 									qput(curr_word->queue_doc, curr_doc);
 									
-									lhput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
+									lhput(input->freqtable, curr_word, curr_word->word, strlen(curr_word->word));
 									
 									pthread_mutex_unlock(&input->mut);
 								}
@@ -414,10 +423,10 @@ void addToTable(void* in)
 									pthread_mutex_lock(&input->mut);
 									doc_t* curr_doc;
 
-									if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &i)) == NULL)
+									if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &input->i)) == NULL)
 										{
 											curr_doc = (doc_t*) malloc(sizeof(doc_t));
-											curr_doc->doc_id = i;
+											curr_doc->doc_id = input->i;
 											curr_doc->count = 1;
 											
 											qput(curr_word->queue_doc, curr_doc);
@@ -449,11 +458,11 @@ void addToTable(void* in)
       webpage_delete(first);
 
     
-
+			return 0;
 }
 
 
-int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int n, int n_threads) {
+int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int n, int n_threads_w) {
 	
 	FILE* index_file;
 
@@ -494,11 +503,43 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
  lhashtable_t* freqtable = lhopen(5000);
  lqueue_t* words = lqopen();
 
- queue_t* threads = 
-	for(int i =1; i <= n; i ++ )
-    {
-			
-		}
+ queue_t* threads = qopen();
+ queue_t* threaddata = qopen();
+
+ int n_threads = min(n_threads_w, n);
+
+ int pages_handled = 0;
+
+ while(pages_handled != n)
+
+	 {
+		 for(int i =0; i <= n_threads; i ++ )
+			 {
+				 
+				 sharedIndexInfo_t* sharedII = makeSharedIndexInfo(freqtable, words, pages_dir, pages_handled + i);
+				 
+				 qput(threaddata, sharedII);
+				 
+				 pthread_t next;
+				 
+				 if(pthread_create(&next, NULL, addToTable, sharedII) !=0)
+					 exit(EXIT_FAILURE);
+				 
+				 qput(threads,&next);
+				 
+			 }
+
+		 for(int i = 0; i <= n_threads; i++)
+			 {
+				 if(pthread_join((long unsigned int)qget(threads), NULL) != 0)
+					 exit(EXIT_FAILURE);
+
+				 freeSharedIndexInfo(qget(threaddata));
+				 pages_handled++;
+			 }
+	 }
+
+ 
 
 	char* counted_word = "";
 	doc_t* doc;
