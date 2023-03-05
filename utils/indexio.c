@@ -19,6 +19,8 @@
 #include <stddef.h>
 #include <ctype.h>
 
+#include "lqueue.h"
+#include "lhash.h"
 #include "pageio.h"
 #include "webpage.h"
 #include "hash.h"
@@ -283,6 +285,220 @@ int32_t indexsave(char* pages_dir  , char* index_dir, char* indexnm, int n) {
 
     }
 
+
+	char* counted_word = "";
+	doc_t* doc;
+	
+	while((counted_word =  (char*)qget(words)) != NULL)
+			{
+				char* line = (char*)malloc(500*sizeof(char));
+				strcpy(line, "");
+				strcat(line, counted_word);
+
+				word_t* word_struct = hsearch(freqtable, word_search, counted_word, strlen(counted_word));
+				
+				while((doc = (doc_t*)qget(word_struct->queue_doc)) != NULL)
+					{
+						char id_str[250];
+						sprintf(id_str, "%d", doc->doc_id);
+
+						strcat(line, " ");
+						strcat(line, id_str);
+
+						char count_str[250];
+						sprintf(count_str, "%d", doc->count);
+
+						strcat(line, " ");
+						strcat(line, count_str);
+
+						free(doc);
+					}
+
+				fprintf(index_file, "%s\n", line);
+				free(line);
+				//free(counted_word);
+			}
+
+	
+			fclose(index_file);
+
+      happly(freqtable, freeWord);
+			happly(freqtable, freeDoc);
+			qclose(words);
+			hclose(freqtable);
+
+
+			return 0;
+}
+/////////////MULTITHREADED BONK/////////////////////////////
+
+typedef struct tableinput{
+
+	lhashtable_t* freqtable;
+	lqueue_t* words;
+	char* pages_dir;
+	int i;
+	pthread_mutex_t mut;
+} sharedIndexInfo_t;
+
+
+sharedIndexInfo_t* makeSharedIndexInfo(lhashtable_t* f, lqueue_t* w, char* p, int i, pthread_mutex_t m)
+{
+	sharedIndexInfo_t* output = (sharedIndexInfo_t*)malloc(sizeof(sharedIndexInfo_t));
+
+	output->freqtable = f;
+	output->words = w;
+	output->pages_dir = p;
+	output->i = i;
+	output->mut = m;
+
+	return output;
+}
+
+void freeSharedIndexInfo(sharedIndexInfo_t* in)
+{
+	lhclose(in->freqtable);
+	lqclose(in->words);
+	free(in->pages_dir);
+	pthread_mutex_destroy(in->mut);
+}
+
+
+void addToTable(void* in)
+{
+
+	sharedIndexInfo_t* input = (sharedIndexInfo_t*)in;
+	
+	
+	webpage_t* first = pageload(input->i,input-> pages_dir);
+	
+	char* savedword = NULL;
+	int pos = 0;
+
+      while((pos = webpage_getNextWord(first, pos, &savedword)) > 0)
+				{
+
+					if(NormalizeWord(savedword))
+						{
+
+							word_t* curr_word;
+							
+							if ((curr_word = lhsearch(input->freqtable, word_search, savedword, strlen(savedword))) == NULL)
+								{
+									pthread_mutex_lock(&input->mut);
+									
+									lqput(input->words, savedword);
+									
+									curr_word = (word_t*) malloc(sizeof(word_t));
+									
+									curr_word->word = savedword;
+									
+									curr_word->queue_doc = qopen();
+									
+									doc_t* curr_doc = (doc_t*) malloc(sizeof(doc_t));
+									
+									curr_doc->doc_id = i;
+									
+									curr_doc->count = 1;
+									
+									
+									qput(curr_word->queue_doc, curr_doc);
+									
+									lhput(freqtable, curr_word, curr_word->word, strlen(curr_word->word));
+									
+									pthread_mutex_unlock(&input->mut);
+								}
+
+							else
+								{
+									pthread_mutex_lock(&input->mut);
+									doc_t* curr_doc;
+
+									if((curr_doc = qsearch(curr_word->queue_doc, doc_search, &i)) == NULL)
+										{
+											curr_doc = (doc_t*) malloc(sizeof(doc_t));
+											curr_doc->doc_id = i;
+											curr_doc->count = 1;
+											
+											qput(curr_word->queue_doc, curr_doc);
+										}
+									
+									else
+										{
+											curr_doc->count++;
+										}
+									
+									free(savedword);
+									pthread_mutex_unlock(&input->mut);
+									
+								}
+							
+						}
+					
+					else free(savedword);
+					
+					
+				}
+			
+      //printf("Url: %s, HTML %s", webpage_getURL(first), webpage_getHTML(first));
+
+      //happly(freqtable, freq_counter);
+
+      //total += sum;
+      //      printf("Intermediate sum: %d\n", sum);
+      webpage_delete(first);
+
+    
+
+}
+
+
+int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int n, int n_threads) {
+	
+	FILE* index_file;
+
+	//char id_str[250] = "1";
+	char path[250] = "";
+
+	strcat(path, index_dir);
+	strcat(path, indexnm);
+	
+	//strcat(path, "/index");
+	//strcat(path, "_");
+
+	char n_str[250] = "";
+	sprintf(n_str, "%d", n);
+
+	//strcat(path, n_str);
+
+
+	if (access(pages_dir, R_OK) == -1) {
+		printf("ERROR: cannot access the directory to read pages\n");
+		return 1;
+	}
+
+	if (access(index_dir, W_OK) == -1) {
+		printf("ERROR: cannot access the directory to save index\n");
+		return 1;
+	}
+
+	index_file = fopen(path, "w");
+
+	if (index_file == NULL) {
+		printf("failed to open the file\n");
+		return 2;
+	}
+
+	//COPYPASTA BELOW:
+
+ lhashtable_t* freqtable = lhopen(5000);
+ lqueue_t* words = lqopen();
+
+ queue_t* threads = 
+	for(int i =1; i <= n; i ++ )
+    {
+			
+		}
 
 	char* counted_word = "";
 	doc_t* doc;
