@@ -73,7 +73,7 @@ char* getUrl(char* pagedir, int id) {
 	}
 	char* line = (char*)(malloc(sizeof(char)*1000));
 	strcpy(line, "");
-
+	
 	size_t len = 1000;
 	
 	getline(&line, &len, f);
@@ -401,7 +401,7 @@ void* addToTable(void* in)
 									
 									lqput(input->words, savedword);
 
-									printf("ADDED: %s to %p\n", savedword, (void*)input->words);
+									//printf("ADDED: %s to %p\n", savedword, (void*)input->words);
 									
 									curr_word = (word_t*) malloc(sizeof(word_t));
 									
@@ -517,36 +517,46 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 
  int pages_handled = 0;
 
+ 
  printf("N, n_threads: %i, %i\n", n, n_threads);
- while(pages_handled != n)
+ while(pages_handled <= n)
 
 	 {
 		 for(int i =1; i <= n_threads; i ++ )
 			 {
-				 
-				 sharedIndexInfo_t* sharedII = makeSharedIndexInfo(freqtable, words, pages_dir, pages_handled + i);
-				 
-				 //qput(threaddata, sharedII);
-				 
-				 pthread_t next;
-
-				 //printf("yee\n");
-				 if(pthread_create(&next, NULL, addToTable, sharedII) !=0)
-					 exit(EXIT_FAILURE);
-				 
-				 qput(threads,&next);
-				 
+				 if(pages_handled + i <=n)
+					 {
+						 printf("Thread: %i\n", i);
+						 sharedIndexInfo_t* sharedII = makeSharedIndexInfo(freqtable, words, pages_dir, pages_handled + i);
+						 
+						 //qput(threaddata, sharedII);
+						 
+						 pthread_t next;
+						 
+						 //printf("yee\n");
+						 if(pthread_create(&next, NULL, addToTable, sharedII) !=0)
+							 exit(EXIT_FAILURE);
+						 
+						 qput(threads,&next);
+					 }
 			 }
 
 		 for(int i = 1; i <= n_threads; i++)
 			 {
-				 pthread_t* shutter = (pthread_t*)qget(threads);
+				 if(pages_handled + i <= n +1)
+					 {
+						 pthread_t* shutter = (pthread_t*)qget(threads);
+						 
+						 pthread_join(*shutter, NULL);
+							 
 
-				 if(pthread_join(*shutter, NULL) != 0)
-					 exit(EXIT_FAILURE);
-
-				 //freeSharedIndexInfo(qget(threaddata));
-				 pages_handled++;
+						 //						 pthread_destr
+						 //printf("EXITING FAILURE\n");
+						 //exit(EXIT_FAILURE);
+						 
+						 //freeSharedIndexInfo(qget(threaddata));
+						 pages_handled++;
+					 }
 			 }
 	 }
 
@@ -554,10 +564,11 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 
 	char* counted_word = "";
 	doc_t* doc;
-	
+
+	printf("Queue words at the end: %p\n", (void*)words);
 	while((counted_word =  (char*)qget(words)) != NULL)
 			{
-				printf("yee\n");
+				//printf("yee\n");
 				char* line = (char*)malloc(500*sizeof(char));
 				strcpy(line, "");
 				strcat(line, counted_word);
@@ -581,7 +592,7 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 						free(doc);
 					}
 
-				printf("HERE IS THE LINE: %s\n", line);
+				//printf("HERE IS THE LINE: %s\n", line);
 				fprintf(index_file, "%s\n", line);
 				free(line);
 				//free(counted_word);
