@@ -29,6 +29,9 @@
 
 int32_t indexsave(char* pages_dir, char* index_dir, char* indexnm, int n);
 
+
+int32_t threadedindexsave(char* pages_dir, char* index_dir, char* indexnm, int n, int indexnm_w);
+
 /* 
  * pageload -- loads the numbered filename <id> in direcory <dirnm>
  * into a new webpage
