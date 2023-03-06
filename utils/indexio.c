@@ -366,9 +366,9 @@ sharedIndexInfo_t* makeSharedIndexInfo(lhashtable_t* f, lqueue_t* w, char* p, in
 
 void freeSharedIndexInfo(sharedIndexInfo_t* in)
 {
-	lhclose(in->freqtable);
-	lqclose(in->words);
-	free(in->pages_dir);
+	//lhclose(in->freqtable);
+	//lqclose(in->words);
+	//free(in->pages_dir);
 	pthread_mutex_destroy(&in->mut);
 }
 
@@ -378,6 +378,9 @@ void* addToTable(void* in)
 
 	sharedIndexInfo_t* input = (sharedIndexInfo_t*)in;
 	
+
+	
+	printf("THREAD RUNNING ON PAGE: %i\n", input->i);
 	
 	webpage_t* first = pageload(input->i,input-> pages_dir);
 	
@@ -397,6 +400,8 @@ void* addToTable(void* in)
 									pthread_mutex_lock(&input->mut);
 									
 									lqput(input->words, savedword);
+
+									printf("ADDED: %s to %p\n", savedword, (void*)input->words);
 									
 									curr_word = (word_t*) malloc(sizeof(word_t));
 									
@@ -457,6 +462,7 @@ void* addToTable(void* in)
       //      printf("Intermediate sum: %d\n", sum);
       webpage_delete(first);
 
+			freeSharedIndexInfo(input);
     
 			return 0;
 }
@@ -503,25 +509,28 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
  lhashtable_t* freqtable = lhopen(5000);
  lqueue_t* words = lqopen();
 
+ printf("Words pointer: %p\n", (void*)words);
  queue_t* threads = qopen();
- queue_t* threaddata = qopen();
+ //queue_t* threaddata = qopen(); NOW FREEING EACH DATA INSIDE THREAD INDIV.
 
  int n_threads = min(n_threads_w, n);
 
  int pages_handled = 0;
 
+ printf("N, n_threads: %i, %i\n", n, n_threads);
  while(pages_handled != n)
 
 	 {
-		 for(int i =0; i <= n_threads; i ++ )
+		 for(int i =1; i <= n_threads; i ++ )
 			 {
 				 
 				 sharedIndexInfo_t* sharedII = makeSharedIndexInfo(freqtable, words, pages_dir, pages_handled + i);
 				 
-				 qput(threaddata, sharedII);
+				 //qput(threaddata, sharedII);
 				 
 				 pthread_t next;
-				 
+
+				 //printf("yee\n");
 				 if(pthread_create(&next, NULL, addToTable, sharedII) !=0)
 					 exit(EXIT_FAILURE);
 				 
@@ -529,12 +538,14 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 				 
 			 }
 
-		 for(int i = 0; i <= n_threads; i++)
+		 for(int i = 1; i <= n_threads; i++)
 			 {
-				 if(pthread_join((long unsigned int)qget(threads), NULL) != 0)
+				 pthread_t* shutter = (pthread_t*)qget(threads);
+
+				 if(pthread_join(*shutter, NULL) != 0)
 					 exit(EXIT_FAILURE);
 
-				 freeSharedIndexInfo(qget(threaddata));
+				 //freeSharedIndexInfo(qget(threaddata));
 				 pages_handled++;
 			 }
 	 }
@@ -546,6 +557,7 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 	
 	while((counted_word =  (char*)qget(words)) != NULL)
 			{
+				printf("yee\n");
 				char* line = (char*)malloc(500*sizeof(char));
 				strcpy(line, "");
 				strcat(line, counted_word);
@@ -569,6 +581,7 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 						free(doc);
 					}
 
+				printf("HERE IS THE LINE: %s\n", line);
 				fprintf(index_file, "%s\n", line);
 				free(line);
 				//free(counted_word);
@@ -577,10 +590,10 @@ int32_t threadedindexsave(char* pages_dir  , char* index_dir, char* indexnm, int
 	
 			fclose(index_file);
 
-      happly(freqtable, freeWord);
-			happly(freqtable, freeDoc);
-			qclose(words);
-			hclose(freqtable);
+			// happly(freqtable, freeWord);
+			//happly(freqtable, freeDoc);
+			//qclose(words);
+			//hclose(freqtable);
 
 
 			return 0;
